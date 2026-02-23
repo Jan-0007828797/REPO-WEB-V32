@@ -236,11 +236,12 @@ button{ font-family:inherit; }
 
 /* GM controls must always stay clickable */
 .gmBar{
+  pointer-events: auto;
   position: fixed;
   left: 14px;
   right: 14px;
-  bottom: 86px; /* above bottom bar */
-  z-index: 40;
+  bottom: calc(96px + env(safe-area-inset-bottom)); /* above bottom bar */
+  z-index: 120;
   display:flex;
   gap: 10px;
   padding: 10px;
@@ -261,7 +262,7 @@ button{ font-family:inherit; }
   display:flex;
   justify-content: space-around;
   gap: 6px;
-  padding: 10px 10px 12px;
+  padding: 10px 10px calc(12px + env(safe-area-inset-bottom));
   background: rgba(10,15,26,.88);
   border-top: 1px solid rgba(255,255,255,.10);
   backdrop-filter: blur(12px);
@@ -573,3 +574,7 @@ button{ font-family:inherit; }
 }
 
 .btn.secondary{ background: rgba(255,255,255,.08); border:1px solid var(--stroke); color: var(--text);} 
+
+.trendCard.clickable{ cursor: pointer; }
+.trendCard.clickable:active{ transform: translateY(1px); }
+.modalText{ font-size: 16px; line-height: 1.35; color: rgba(255,255,255,.92); }

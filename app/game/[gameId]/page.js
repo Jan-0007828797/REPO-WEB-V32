@@ -75,6 +75,7 @@ export default function GamePage(){
   const [gs, setGs] = useState(null);
   const [err, setErr] = useState("");
   const [tab, setTab] = useState(null);
+  const [trendModal, setTrendModal] = useState(null); // {name, icon, desc}
 
   // local privacy modes
   const [mlPrivacy, setMlPrivacy] = useState("edit");       // edit|hidden|reveal
@@ -391,6 +392,14 @@ export default function GamePage(){
 
       <BottomBar onTab={setTab} />
 
+
+      {trendModal ? (
+        <Modal title={`${trendModal.icon||"🌐"} ${trendModal.name||"Trend"}`} onClose={()=>setTrendModal(null)}>
+          <div className="modalText">
+            {trendModal.desc ? trendModal.desc : "Detail trendu není k dispozici."}
+          </div>
+        </Modal>
+      ) : null}
       {/* privacy overlays */}
       <PrivacyCard
         kind="ML"
@@ -499,7 +508,7 @@ function TrendsPanel({ gs, playerId, onRevealGlobal, onRevealCrypto }){
               <div className="secTitle">Globální</div>
               <div className="cardRow">
                 {data?.globals?.map((t)=>(
-                  <TrendCard key={t.trendId} revealed={gRevealed} title={t.name} icon={t.icon||"🌐"} />
+                  <TrendCard key={t.trendId} revealed={gRevealed} title={t.name} icon={t.icon||"🌐"} clickable={gRevealed} onClick={()=> setTrendModal(t)} />
                 ))}
               </div>
 
@@ -577,9 +586,9 @@ function TrendsPreviewCard({ gs, onOpen }){
   );
 }
 
-function TrendCard({ revealed, title, icon, wide }){
+function TrendCard({ revealed, title, icon, wide, onClick, clickable }){
   return (
-    <div className={"trendCard"+(wide?" wide":"")+(revealed?"":" back")}>
+    <div className={"trendCard"+(wide?" wide":"")+(revealed?"":" back")+(clickable?" clickable":"")} onClick={revealed && clickable ? onClick : undefined} role={revealed && clickable ? "button" : undefined} tabIndex={revealed && clickable ? 0 : undefined}>
       {revealed ? (
         <>
           <div className="trendIcon">{icon}</div>
