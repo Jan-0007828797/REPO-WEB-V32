@@ -493,6 +493,59 @@ button{ font-family:inherit; }
 .cryptoCtrls{ display:flex; align-items:center; gap:10px; }
 .cryptoVal{ min-width: 42px; text-align:center; font-weight: 900; font-size: 18px; }
 
+.cryptoLineUsd{
+  margin-left:auto;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.cryptoLineUsd.pos{ color: rgba(52,211,153,.95); }
+.cryptoLineUsd.neg{ color: rgba(251,113,133,.95); }
+.cryptoLineUsd.neu{ color: rgba(243,246,255,.70); }
+
+.cryptoTotal{
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+}
+.cryptoTotalVal{ font-weight: 900; font-size: 18px; }
+.cryptoTotalVal.pos{ color: rgba(52,211,153,.98); }
+.cryptoTotalVal.neg{ color: rgba(251,113,133,.98); }
+.cryptoTotalVal.neu{ color: rgba(243,246,255,.80); }
+
+/* Acquisition scanner */
+.scanFrame{
+  margin-top: 12px;
+  border-radius: 22px;
+  overflow: hidden;
+  border:1px solid rgba(0,240,255,.22);
+  position: relative;
+  background: rgba(0,0,0,.20);
+}
+.scanVideo{ width:100%; height:auto; display:block; }
+.scanHint{
+  position:absolute;
+  left: 12px;
+  bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border:1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.35);
+  font-weight: 800;
+  font-size: 13px;
+}
+.scanIdle{
+  margin-top: 10px;
+  padding: 18px 14px;
+  border-radius: 22px;
+  border:1px dashed rgba(255,255,255,.18);
+  background: rgba(255,255,255,.04);
+  text-align:center;
+}
+.scanIdleIcon{ font-size: 34px; }
+.scanIdleText{ margin-top: 8px; color: rgba(243,246,255,.75); font-weight: 700; }
+
 /* trends */
 .revealBar{
   display:flex;

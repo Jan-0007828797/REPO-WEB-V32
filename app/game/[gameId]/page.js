@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import { getSocket } from "../../../lib/socket";
 import { loadPlayerId } from "../../../lib/storage";
 import { playClock, stopClock, playRing, stopRing } from "../../../lib/audio";
@@ -41,6 +42,7 @@ function StepIcons({ phase, bizStep }){
     { key:"ML_BID", label:"Market Leader", icon:"👑" },
     { key:"MOVE", label:"Investice", icon:"📍" },
     { key:"AUCTION_ENVELOPE", label:"Dražba", icon:"✉️" },
+    { key:"ACQUIRE", label:"Akvizice", icon:"📷" },
   ];
   return (
     <div className="stepRow">
@@ -85,6 +87,12 @@ function PrivacyCard({ kind, mode, amountText, onReveal, onHide, onClose }){
   );
 }
 
+function pickBackCamera(devices = []) {
+  const byLabel = devices.find((d) => /back|rear|environment/i.test(d.label || ""));
+  if (byLabel) return byLabel;
+  return devices[devices.length - 1] || null;
+}
+
 export default function GamePage(){
   const { gameId } = useParams();
   const router = useRouter();
@@ -114,6 +122,13 @@ export default function GamePage(){
   const [aucFinalBid, setAucFinalBid] = useState("");
 
   const [cryptoD, setCryptoD] = useState({ BTC:0, ETH:0, LTC:0, SIA:0 });
+
+  // Acquisition (scan) UI
+  const [scanOn, setScanOn] = useState(false);
+  const [scanErr, setScanErr] = useState("");
+  const [scanPreview, setScanPreview] = useState(null); // {card}
+  const videoRef = useRef(null);
+  const codeReader = useMemo(()=> new BrowserMultiFormatReader(), []);
 
   useEffect(()=>{
     const s = getSocket();
@@ -181,7 +196,65 @@ export default function GamePage(){
       setSettlePrivacy(committed ? "hidden" : "edit");
       setSettleOverlayOpen(true);
     }
+
+    // Acquisition step: default scanner OFF, clear preview
+    if(phase==="BIZ" && step==="ACQUIRE"){
+      setScanOn(false);
+      setScanErr("");
+      setScanPreview(null);
+    }
   }, [gs?.phase, gs?.bizStep, gs?.year]);
+
+  // Acquisition scanner lifecycle
+  useEffect(()=>{
+    const phase = gs?.phase;
+    const step = gs?.bizStep;
+    if(!(phase==="BIZ" && step==="ACQUIRE" && scanOn)){
+      try{ codeReader.reset(); }catch{}
+      return;
+    }
+    let active = true;
+    setScanErr("");
+    (async ()=>{
+      try{
+        // Prefer back camera
+        try{
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+          stream.getTracks().forEach(t=>t.stop());
+        }catch{}
+
+        const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+        if(!devices?.length) throw new Error("Kamera nenalezena");
+        const back = pickBackCamera(devices);
+        const deviceId = back?.deviceId || devices[0].deviceId;
+
+        await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result)=>{
+          if(!active) return;
+          if(result){
+            const raw = String(result.getText()||"").trim();
+            if(!raw) return;
+            // Pause scanning while we confirm
+            try{ codeReader.reset(); }catch{}
+            active = false;
+            // Ask server for preview (does NOT claim)
+            s.emit("scan_preview", { gameId, playerId, cardQr: raw }, (res)=>{
+              if(!res?.ok){
+                setScanErr(res?.error || "Neznámá karta");
+                // Resume scanning
+                setScanOn(false);
+                setTimeout(()=>{ setScanOn(true); }, 250);
+                return;
+              }
+              setScanPreview({ card: res.card });
+            });
+          }
+        });
+      }catch(e){
+        setScanErr(String(e?.message||e));
+      }
+    })();
+    return ()=>{ active = false; try{ codeReader.reset(); }catch{} };
+  }, [gs?.phase, gs?.bizStep, scanOn, codeReader, s, gameId, playerId]);
 
   const s = useMemo(()=> getSocket(), []);
 
@@ -238,6 +311,22 @@ export default function GamePage(){
       setSettlePrivacy("hidden");
       setSettleOverlayOpen(true);
     });
+  }
+
+  function acceptScannedCard(cardId){
+    s.emit("claim_card", { gameId, playerId, cardId }, (res)=>{
+      if(!res?.ok) setErr(res?.error||"Chyba");
+      setScanPreview(null);
+      // Resume scanning if still in ACQUIRE
+      setScanOn(false);
+      setTimeout(()=>{ setScanOn(true); }, 250);
+    });
+  }
+
+  function rejectScannedCard(){
+    setScanPreview(null);
+    setScanOn(false);
+    setTimeout(()=>{ setScanOn(true); }, 250);
   }
 
   // derived display amounts
@@ -388,6 +477,37 @@ export default function GamePage(){
               </>
             )}
           </div>
+        ) : gs.phase==="BIZ" && gs.bizStep==="ACQUIRE" ? (
+          <div className="card phaseCard">
+            <div className="phaseHeader">
+              <div className="phaseLeft">
+                <div className="phaseIcon">📷</div>
+                <div>
+                  <div className="phaseTitle">Získej svou investici</div>
+                  <div className="phaseSub">Naskenuj QR na kartě a potvrď, že je tvoje. Můžeš skenovat více karet.</div>
+                </div>
+              </div>
+              <button className={"primaryBtn"} onClick={()=>{ setScanErr(""); setScanOn(v=>!v); }}>
+                {scanOn ? "Vypnout skener" : "Zapnout skener"}
+              </button>
+            </div>
+
+            {scanOn ? (
+              <>
+                {scanErr ? <div className="notice">{scanErr}</div> : null}
+                <div className="scanFrame">
+                  <video ref={videoRef} className="scanVideo" />
+                  <div className="scanHint">Zaměř QR kód</div>
+                </div>
+                <div className="muted" style={{marginTop:10}}>Tip: přibliž/oddal telefon, ať je QR ostrý.</div>
+              </>
+            ) : (
+              <div className="scanIdle">
+                <div className="scanIdleIcon">📷</div>
+                <div className="scanIdleText">Skener je vypnutý. Zapni ho a naskenuj své karty.</div>
+              </div>
+            )}
+          </div>
         ) : gs.phase==="CRYPTO" ? (
           <div className="card phaseCard">
             <div className="phaseHeader">
@@ -403,20 +523,47 @@ export default function GamePage(){
               {["BTC","ETH","LTC","SIA"].map(sym=>{
                 const rate = gs.crypto?.rates?.[sym] || 0;
                 const val = cryptoD[sym] || 0;
+                const owned = me?.wallet?.crypto?.[sym] ?? 0;
+                const lineUsd = -val * rate; // positive = gain (sell), negative = cost (buy)
                 return (
                   <div key={sym} className="cryptoRow">
                     <div className="cryptoMeta">
                       <div className="cryptoSym">{sym}</div>
-                      <div className="muted">{rate} USD/ks</div>
+                      <div className="muted">{rate} USD/ks • Vlastním: <b>{owned}</b></div>
                     </div>
                     <div className="cryptoCtrls">
-                      <button className="ghostBtn" onClick={()=>setCryptoD({...cryptoD, [sym]: val-1})}>−</button>
+                      <button
+                        className="ghostBtn"
+                        onClick={()=>{
+                          const next = val-1;
+                          // selling (negative) cannot exceed owned
+                          if(next < 0 && Math.abs(next) > owned) return;
+                          setCryptoD({...cryptoD, [sym]: next});
+                        }}
+                      >−</button>
                       <div className="cryptoVal">{val}</div>
-                      <button className="ghostBtn" onClick={()=>setCryptoD({...cryptoD, [sym]: val+1})}>+</button>
+                      <button
+                        className="ghostBtn"
+                        onClick={()=>{
+                          const next = val+1;
+                          setCryptoD({...cryptoD, [sym]: next});
+                        }}
+                      >+</button>
+                    </div>
+                    <div className={"cryptoLineUsd "+(lineUsd>0?"pos":lineUsd<0?"neg":"neu")}>
+                      {lineUsd>0?`+${lineUsd} USD`:lineUsd<0?`${lineUsd} USD`:`0 USD`}
                     </div>
                   </div>
                 );
               })}
+            </div>
+            <div className="cryptoTotal">
+              {(()=>{
+                const total = ["BTC","ETH","LTC","SIA"].reduce((acc,sym)=> acc + (-(cryptoD[sym]||0) * (gs.crypto?.rates?.[sym]||0)), 0);
+                const cls = total>0?"pos":total<0?"neg":"neu";
+                const txt = total>0?`+${total} USD`:total<0?`${total} USD`:`0 USD`;
+                return <div className={"cryptoTotalVal "+cls}>Celkem: {txt}</div>;
+              })()}
             </div>
             <button className="primaryBtn full" onClick={commitCrypto}>Potvrdit transakci</button>
             <button className="ghostBtn full" onClick={()=>{ setCryptoD({BTC:0,ETH:0,LTC:0,SIA:0}); commitCrypto(); }}>Neobchoduji</button>
@@ -456,6 +603,47 @@ export default function GamePage(){
       </div>
 
       <BottomBar onTab={setTab} />
+
+      {/* Acquisition: scanned card confirmation (always top) */}
+      {scanPreview?.card ? (
+        <SuperTopModal
+          title={scanPreview.card.kind==="INVESTMENT" ? "Tradiční investice" : scanPreview.card.kind==="MINING_FARM" ? "Mining farma" : "Expert"}
+          onClose={()=>{ setScanPreview(null); setScanOn(false); }}
+        >
+          <div style={{display:"grid",gap:10}}>
+            <div className="cardInner">
+              <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}>
+                <div>
+                  <div style={{fontWeight:900,fontSize:18}}>{scanPreview.card.name}</div>
+                  <div className="muted">ID: {scanPreview.card.cardId}</div>
+                </div>
+                <div className="pill">{scanPreview.card.kind.replace("_"," ")}</div>
+              </div>
+              {scanPreview.card.kind==="INVESTMENT" ? (
+                <div className="muted" style={{marginTop:8}}>
+                  Kontinent: <b>{scanPreview.card.continent}</b> • Trh: <b>{scanPreview.card.market}</b> • Typ: <b>{scanPreview.card.type}</b>
+                  <br/>Základní produkce: <b>+{scanPreview.card.usdProduction} USD</b>
+                </div>
+              ) : scanPreview.card.kind==="MINING_FARM" ? (
+                <div className="muted" style={{marginTop:8}}>
+                  Krypto: <b>{scanPreview.card.crypto}</b> • Produkce: <b>+{scanPreview.card.cryptoProduction} ks/rok</b>
+                  <br/>Elektřina: <b>-{scanPreview.card.electricityUSD} USD</b>
+                </div>
+              ) : (
+                <div className="muted" style={{marginTop:8}}>
+                  Funkce: <b>{scanPreview.card.functionLabel}</b>
+                  <br/>{scanPreview.card.functionDesc}
+                </div>
+              )}
+            </div>
+
+            <div className="ctaRow">
+              <button className="primaryBtn full" onClick={()=>acceptScannedCard(scanPreview.card.cardId)}>✅ Ano, to je moje</button>
+              <button className="ghostBtn full" onClick={rejectScannedCard}>✖ Ne, chyba</button>
+            </div>
+          </div>
+        </SuperTopModal>
+      ) : null}
 
 
       {/* NOTE: trend/regional detail overlays are rendered at the very end (superTop) so they always stay above other modals. */}
