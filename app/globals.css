@@ -238,11 +238,13 @@ button{ font-family:inherit; }
 .gmBar{
   pointer-events: auto;
   position: fixed;
-  left: 14px;
-  right: 14px;
-  bottom: calc(96px + env(safe-area-inset-bottom)); /* above bottom bar */
-  z-index: 120;
+  top: calc(10px + env(safe-area-inset-top));
+  right: 12px;
+  left: auto;
+  bottom: auto;
+  z-index: 220;
   display:flex;
+  flex-direction: column;
   gap: 10px;
   padding: 10px;
   border-radius: 18px;
@@ -250,7 +252,9 @@ button{ font-family:inherit; }
   background: rgba(15,23,42,.82);
   backdrop-filter: blur(10px);
   box-shadow: 0 10px 25px rgba(0,0,0,.35);
+  width: min(220px, calc(100vw - 24px));
 }
+
 
 /* Bottom bar (WhatsApp-ish) */
 .bottomBar{
@@ -535,8 +539,19 @@ button{ font-family:inherit; }
   display:flex;
   align-items:flex-end;
   justify-content:center;
-  z-index: 50;
+  z-index: 500;
 }
+
+.modalBackdrop.top{
+  align-items:flex-start;
+  padding-top: calc(14px + env(safe-area-inset-top));
+}
+
+.modalBackdrop.top .modal{
+  border-radius: 22px;
+  margin: 0 14px;
+}
+
 .modal{
   width: min(980px, 100%);
   border-radius: 22px 22px 0 0;
@@ -596,6 +611,14 @@ button{ font-family:inherit; }
 .cryptoCard .cryptoRow{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,0.06); }
 .cryptoCard .cryptoRow .coin{ font-weight:800; letter-spacing:0.5px; }
 .cryptoCard .cryptoRow .coef{ font-variant-numeric: tabular-nums; opacity:0.9; }
+
+.cryptoCard .cryptoRow.up .arrow{ color: var(--primary); }
+.cryptoCard .cryptoRow.down .arrow{ color: var(--danger); }
+.cryptoCard .cryptoRow.flat .arrow{ color: var(--accent); }
+
+.cryptoPreview .cryptoMini.up .arrow{ color: var(--primary); }
+.cryptoPreview .cryptoMini.down .arrow{ color: var(--danger); }
+.cryptoPreview .cryptoMini.flat .arrow{ color: var(--accent); }
 .cryptoCard .cryptoRow.up{ outline:1px solid rgba(46, 204, 113, 0.35); }
 .cryptoCard .cryptoRow.down{ outline:1px solid rgba(231, 76, 60, 0.35); }
 .cryptoCard .cryptoRow.flat{ outline:1px solid rgba(52, 152, 219, 0.35); }

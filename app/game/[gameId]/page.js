@@ -394,7 +394,7 @@ export default function GamePage(){
 
 
       {trendModal ? (
-        <Modal title={`${trendModal.icon||"🌐"} ${trendModal.name||"Trend"}`} onClose={()=>setTrendModal(null)}>
+        <Modal variant="top" title={`${trendModal.icon||"🌐"} ${trendModal.name||"Trend"}`} onClose={()=>setTrendModal(null)}>
           <div className="modalText">
             {trendModal.desc ? trendModal.desc : "Detail trendu není k dispozici."}
           </div>
@@ -596,9 +596,9 @@ function TrendsPreviewCard({ gs, onOpen, onOpenTrend }){
       <div className="titleRow">
         <div>
           <div className="title">Trendy • Rok {y}</div>
-          <div className="muted">Aktuální trendy jsou vidět hned. Pro budoucnost použij <b>Spekulace</b>.</div>
+          <div className="muted">nové aktivní trendy</div>
         </div>
-        <button className="ghostBtn" onClick={onOpen}>Spekulace</button>
+        <button className="ghostBtn" onClick={onOpen}>Všechny trendy</button>
       </div>
 
       <div className="trendPreview">

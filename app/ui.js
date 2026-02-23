@@ -1,9 +1,9 @@
 "use client";
 import { useEffect } from "react";
-export function Modal({title,onClose,children}){
+export function Modal({title,onClose,children,variant}){
   useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
   return (
-    <div className="modalBackdrop" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
+    <div className={"modalBackdrop"+(variant==="top"?" top":"")} onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
       <div className="modal">
         <div className="modalHeader">
           <div style={{fontWeight:900,fontSize:18}}>{title}</div>
