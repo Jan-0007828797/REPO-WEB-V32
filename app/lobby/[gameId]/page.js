@@ -16,11 +16,19 @@ export default function Lobby(){
   useEffect(()=>{
     const s=getSocket();
     s.emit("watch_lobby",{gameId},()=>{});
+    // Extra safety: ensure we are subscribed to full game state too
+    s.emit("watch_game",{gameId},()=>{});
     const onUpd=(p)=>{ if(p?.gameId!==gameId) return; setPlayers(p.players||[]); setCfg(p.config||null); };
     const onStarted=()=>r.push(`/game/${gameId}`);
     s.on("lobby_update", onUpd);
+    const onState=(gs)=>{ if(gs?.gameId!==gameId) return; if(gs?.players) setPlayers(gs.players); if(gs?.config) setCfg(gs.config); };
+    s.on("game_state", onState);
     s.on("game_started", onStarted);
-    return ()=>{ s.off("lobby_update", onUpd); s.off("game_started", onStarted); };
+    // Safety refresh: some mobiles reconnect sockets silently
+    const t = setInterval(()=>{ s.emit("watch_lobby",{gameId},()=>{});
+    // Extra safety: ensure we are subscribed to full game state too
+    s.emit("watch_game",{gameId},()=>{}); }, 2000);
+    return ()=>{ clearInterval(t); s.off("lobby_update", onUpd); s.off("game_state", onState); s.off("game_started", onStarted); };
   },[gameId,r]);
   function start(){ const s=getSocket(); s.emit("start_game",{gameId},()=>{}); }
   const canStart = isGM && cfg && players.length>=1;
@@ -33,7 +41,7 @@ export default function Lobby(){
           <div style={{flex:"2 1 240px"}}>
             {cfg ? <div className="pills"><span className="pill">🗓️ {cfg.yearsTotal}</span><span className="pill">👥 {cfg.maxPlayers}</span></div> : null}
             <div className="sectionLabel">Připojení hráči</div>
-            <ul className="list">{players.map(p=>(<li key={p.playerId}><span>{p.name}</span><span className="badge">{p.role==="GM"?"GM":"Hráč"}</span></li>))}</ul>
+            <ul className="list">{players.length===0 ? (<li><span>Čekám na hráče…</span><span className="badge">Lobby</span></li>) : players.map(p=>(<li key={p.playerId}><span>{p.name}</span><span className="badge">{p.role==="GM"?"GM":"Hráč"}</span></li>))}</ul>
             {isGM ? <button className="btn" disabled={!canStart} onClick={start}>▶ Spustit</button> : null}
           </div>
         </div>

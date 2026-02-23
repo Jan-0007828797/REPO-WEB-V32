@@ -398,6 +398,60 @@ export default function GamePage(){
           <div className="modalText">
             {trendModal.desc ? trendModal.desc : "Detail trendu není k dispozici."}
           </div>
+
+          {(() => {
+            const inv = gs?.inventory?.[playerId] || { experts: [] };
+            const lawyerLeft = (inv.experts||[]).filter(e=>e.functionKey==="LAWYER_TRENDS" && !e.used).length;
+            const allowed = !!trendModal?.lawyer?.allowed;
+            const req = trendModal?.lawyer?.phase;
+            const phase = gs?.phase;
+            const biz = gs?.bizStep;
+
+            const canNow =
+              allowed && (
+                (req==="BIZ_TRENDS_ONLY" && phase==="BIZ" && biz==="TRENDS") ||
+                (req==="BIZ_MOVE_ONLY" && phase==="BIZ" && biz==="MOVE") ||
+                (req==="AUDIT_ANYTIME_BEFORE_CLOSE" && phase==="SETTLE")
+              );
+
+            const y = String(gs?.year||1);
+            const protectedNow = !!gs?.lawyer?.protections?.[playerId]?.[y]?.[trendModal.key];
+
+            function useLawyer(){
+              const s = getSocket();
+              s.emit("use_lawyer_on_trend", { gameId, playerId, trendKey: trendModal.key }, (res)=>{
+                // no toast system in MVP; simple feedback
+                if(!res?.ok) alert(res?.error || "Chyba");
+              });
+            }
+
+            const phaseHint =
+              req==="BIZ_TRENDS_ONLY" ? "Právníka lze použít pouze ve fázi Trendy." :
+              req==="BIZ_MOVE_ONLY" ? "Právníka lze použít pouze ve fázi Investice (pohyb)." :
+              req==="AUDIT_ANYTIME_BEFORE_CLOSE" ? "Právníka lze použít kdykoliv před uzavřením Auditu." :
+              "Právníka nelze použít.";
+
+            return (
+              <div className="lawyerBox">
+                <div className="secTitle" style={{marginTop:12}}>Právník</div>
+
+                {!allowed ? (
+                  <div className="muted">Na tento trend nelze použít Právníka.</div>
+                ) : protectedNow ? (
+                  <div className="pill" style={{display:"inline-flex"}}>✅ Ochráněno (tento rok)</div>
+                ) : lawyerLeft<1 ? (
+                  <div className="muted">Právník není k dispozici.</div>
+                ) : (
+                  <>
+                    <div className="muted">{phaseHint}</div>
+                    <button className={"primaryBtn full"+(canNow? "":" disabled")} disabled={!canNow} onClick={useLawyer}>
+                      Použít právníka
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </Modal>
       ) : null}
       {/* privacy overlays */}
@@ -552,7 +606,7 @@ function TrendsPreviewCard({ gs, onOpen }){
           <div className="secTitle">Globální</div>
           <div className="previewRow">
             {(data?.globals||[]).map(t=>(
-              <div key={t.trendId} className="previewCard">
+              <div key={t.trendId} className="previewCard clickable" onClick={()=>setTrendModal(t)} role="button" tabIndex={0}>
                 <div className="previewIcon">{t.icon||"🌐"}</div>
                 <div className="previewName">{t.name}</div>
               </div>

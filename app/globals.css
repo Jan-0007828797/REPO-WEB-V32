@@ -578,3 +578,14 @@ button{ font-family:inherit; }
 .trendCard.clickable{ cursor: pointer; }
 .trendCard.clickable:active{ transform: translateY(1px); }
 .modalText{ font-size: 16px; line-height: 1.35; color: rgba(255,255,255,.92); }
+
+.previewCard.clickable{ cursor:pointer; }
+.previewCard.clickable:active{ transform: translateY(1px); }
+
+.lawyerBox{
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.22);
+}
