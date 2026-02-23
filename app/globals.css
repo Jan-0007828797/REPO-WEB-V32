@@ -185,6 +185,25 @@ button{ font-family:inherit; }
   box-shadow: 0 8px 20px rgba(0,0,0,.25);
 }
 
+.topHeaderRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
+}
+
+.yearPill{
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(243,246,255,.92);
+  font-weight: 900;
+  letter-spacing: .2px;
+  font-variant-numeric: tabular-nums;
+}
+
 .brand{
   font-family: Orbitron, Inter, system-ui;
   letter-spacing: 3px;
@@ -401,6 +420,7 @@ button{ font-family:inherit; }
   font-size: 16px;
   cursor:pointer;
   border:1px solid transparent;
+  transition: transform .08s ease, filter .08s ease, background .12s ease, border-color .12s ease;
 }
 .primaryBtn{
   background: linear-gradient(90deg, var(--primary), var(--accent));
@@ -412,6 +432,8 @@ button{ font-family:inherit; }
   border-color: var(--stroke);
   color: var(--text);
 }
+.primaryBtn:active, .ghostBtn:active{ transform: translateY(1px); }
+.ghostBtn:hover{ filter: brightness(1.08); }
 .primaryBtn.big, .ghostBtn.big{ width: 100%; font-size: 18px; padding: 16px 14px; }
 .full{ width:100%; margin-top: 10px; }
 .checkRow{ display:flex; align-items:center; gap:10px; color: var(--muted); font-weight: 700; }
@@ -651,3 +673,53 @@ button{ font-family:inherit; }
 .cryptoPreview .cryptoMini.up{ outline:1px solid rgba(46, 204, 113, 0.35); }
 .cryptoPreview .cryptoMini.down{ outline:1px solid rgba(231, 76, 60, 0.35); }
 .cryptoPreview .cryptoMini.flat{ outline:1px solid rgba(52, 152, 219, 0.35); }
+
+/* ---------- v3.3.1 UI refresh (business/crypto/audit) ---------- */
+.phaseCard{ position:relative; overflow:hidden; }
+.phaseCard::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background: radial-gradient(420px 240px at 18% 10%, rgba(96,165,250,.18), transparent 60%),
+              radial-gradient(420px 240px at 88% 30%, rgba(52,211,153,.16), transparent 60%);
+  pointer-events:none;
+}
+.phaseCard > *{ position:relative; }
+
+.phaseHeader{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.phaseLeft{ display:flex; align-items:center; gap:10px; }
+.phaseIcon{
+  width:44px; height:44px;
+  border-radius: 14px;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  font-size: 20px;
+}
+.phaseTitle{ font-size: 18px; font-weight: 900; letter-spacing:.2px; }
+.phaseSub{ margin-top:6px; color: var(--muted); font-size: 14px; line-height:1.35; }
+
+.ctaRow{ display:flex; gap:10px; margin-top: 12px; }
+.ctaRow .primaryBtn, .ctaRow .ghostBtn{ width: 100%; }
+
+.marketBtn{ transition: transform .08s ease, filter .08s ease, background .12s ease; }
+.marketBtn:hover{ filter: brightness(1.08); }
+
+.cryptoRow{
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+}
+.cryptoCtrls .ghostBtn{ padding: 10px 12px; }
+
+.auditHero{
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.22);
+}
+.auditHeroTitle{ font-weight: 900; }
+.auditHeroHint{ color: var(--muted); margin-top: 6px; font-size: 13px; }
+
+/* Modal stacking helper: always on top */
+.modalBackdrop.top{ z-index: 260; }
+.modalBackdrop.superTop{ z-index: 280; }

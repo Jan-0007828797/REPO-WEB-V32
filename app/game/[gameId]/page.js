@@ -269,8 +269,13 @@ export default function GamePage(){
   return (
     <div className="screen">
       <div className="topHeader">
-        <div className="brand">KRYPTOPOLY</div>
-        <div className="subBrand">{headerPhase}{gs?.year?` • Rok ${gs.year}`:""}</div>
+        <div className="topHeaderRow">
+          <div>
+            <div className="brand">KRYPTOPOLY</div>
+            <div className="subBrand">{headerPhase}</div>
+          </div>
+          {gs?.year ? <div className="yearPill">Rok {gs.year}</div> : null}
+        </div>
         <StepIcons phase={gs?.phase} bizStep={gs?.bizStep} />
       </div>
 
@@ -292,19 +297,36 @@ export default function GamePage(){
             onOpenRegional={(t)=>setRegionalModal(t)}
           />
         ) : gs.phase==="BIZ" && gs.bizStep==="ML_BID" ? (
-          <div className="card">
-            <div className="title">Market Leader</div>
-            <div className="muted">Zadej nabídku (USD) nebo zvol „Nechci“. Po potvrzení se displej skryje.</div>
+          <div className="card phaseCard">
+            <div className="phaseHeader">
+              <div className="phaseLeft">
+                <div className="phaseIcon">👑</div>
+                <div>
+                  <div className="phaseTitle">Market Leader</div>
+                  <div className="phaseSub">Zadej nabídku v USD. Po potvrzení se displej automaticky skryje.</div>
+                </div>
+              </div>
+            </div>
+
             <div className="formRow">
               <input className="inputBig" inputMode="numeric" placeholder="0" value={mlBid} onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))} />
               <button className="primaryBtn" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
             </div>
-            <button className="ghostBtn full" onClick={()=>commitML(null)}>Nechci být ML</button>
+            <div className="ctaRow">
+              <button className="ghostBtn" onClick={()=>commitML(null)}>Nechci být ML</button>
+            </div>
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="MOVE" ? (
-          <div className="card">
-            <div className="title">Investice (pohyb)</div>
-            <div className="muted">Klikni na trh. Trh zmizí ostatním. Volba je definitivní.</div>
+          <div className="card phaseCard">
+            <div className="phaseHeader">
+              <div className="phaseLeft">
+                <div className="phaseIcon">📍</div>
+                <div>
+                  <div className="phaseTitle">Investice (pohyb)</div>
+                  <div className="phaseSub">Vyber trh. Jakmile klikneš, trh zmizí ostatním. Volba je definitivní.</div>
+                </div>
+              </div>
+            </div>
             <div className="gridMarkets">
               {markets.map(m=>{
                 const lockedBy = locks[m.marketId];
@@ -324,12 +346,17 @@ export default function GamePage(){
             </div>
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="AUCTION_ENVELOPE" ? (
-          <div className="card">
-            <div className="titleRow">
-              <div className="title">Dražba – obálka</div>
-              {isGM ? <button className="ghostBtn" onClick={openLobbyWindow}>Otevřít lobbistu</button> : null}
+          <div className="card phaseCard">
+            <div className="phaseHeader">
+              <div className="phaseLeft">
+                <div className="phaseIcon">✉️</div>
+                <div>
+                  <div className="phaseTitle">Dražba – obálka</div>
+                  <div className="phaseSub">Zadej nabídku v USD, nebo zvol neúčast. Pokud máš lobbistu, můžeš získat „poslední šanci“.</div>
+                </div>
+              </div>
+              {isGM ? <button className="ghostBtn" onClick={openLobbyWindow}>Lobbista</button> : null}
             </div>
-            <div className="muted">Zadej nabídku (USD) nebo neúčast. Pokud máš lobbistu, můžeš získat „poslední šanci“.</div>
 
             {!aucEntry?.committed ? (
               <>
@@ -362,9 +389,16 @@ export default function GamePage(){
             )}
           </div>
         ) : gs.phase==="CRYPTO" ? (
-          <div className="card">
-            <div className="title">Kryptoburza</div>
-            <div className="muted">Naklikej změny (ks). Pak potvrď. Aplikace ukáže dopad v USD.</div>
+          <div className="card phaseCard">
+            <div className="phaseHeader">
+              <div className="phaseLeft">
+                <div className="phaseIcon">₿</div>
+                <div>
+                  <div className="phaseTitle">Kryptofáze</div>
+                  <div className="phaseSub">Naklikej změny v kusech. Pak potvrď. Ukazovací režim skryje detaily.</div>
+                </div>
+              </div>
+            </div>
             <div className="cryptoList">
               {["BTC","ETH","LTC","SIA"].map(sym=>{
                 const rate = gs.crypto?.rates?.[sym] || 0;
@@ -388,12 +422,23 @@ export default function GamePage(){
             <button className="ghostBtn full" onClick={()=>{ setCryptoD({BTC:0,ETH:0,LTC:0,SIA:0}); commitCrypto(); }}>Neobchoduji</button>
           </div>
         ) : gs.phase==="SETTLE" ? (
-          <div className="card">
-            <div className="titleRow">
-              <div className="title">Audit</div>
-              <button className="ghostBtn" onClick={()=>setTab("accounting")}>Detail</button>
+          <div className="card phaseCard">
+            <div className="phaseHeader">
+              <div className="phaseLeft">
+                <div className="phaseIcon">🧾</div>
+                <div>
+                  <div className="phaseTitle">Audit</div>
+                  <div className="phaseSub">Aplikace zobrazí částku k vyrovnání. Ukazovací režim ukáže jen jedno číslo.</div>
+                </div>
+              </div>
+              <button className="ghostBtn" onClick={()=>setTab("accounting")}>Účetnictví</button>
             </div>
-            <div className="muted">Aplikace zobrazí částku pro vyrovnání. Ukazovací režim ukáže jen jedno číslo.</div>
+
+            <div className="auditHero">
+              <div className="auditHeroTitle">Připrav se na uzavření roku</div>
+              <div className="auditHeroHint">Až GM potvrdí krok, ukáže se částka pro vyrovnání. Pak fyzicky zaplatíš / obdržíš USD.</div>
+            </div>
+
             <button className="primaryBtn full" onClick={commitSettle}>Potvrdit připraven</button>
           </div>
         ) : (
@@ -674,9 +719,10 @@ function TrendsPreviewCard({ gs, onOpen, onOpenTrend, onOpenRegional }){
 
 
 function arrowForCoeff(k){
-  if(k>1) return { sym:"⬆️", cls:"up", label:"roste" };
-  if(k<1) return { sym:"⬇️", cls:"down", label:"klesá" };
-  return { sym:"➡️", cls:"flat", label:"beze změny" };
+  // Use text arrows so we can color them via CSS.
+  if(k>1) return { sym:"▲", cls:"up", label:"roste" };
+  if(k<1) return { sym:"▼", cls:"down", label:"klesá" };
+  return { sym:"→", cls:"flat", label:"beze změny" };
 }
 
 function CryptoTrendCard({ revealed, crypto }){
