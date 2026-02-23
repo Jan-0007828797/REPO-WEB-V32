@@ -11,7 +11,7 @@ function badgeFor(kind){
   if(kind==="ML") return { emoji:"🟩", label:"MARKET LEADER" };
   if(kind==="AUCTION") return { emoji:"🟨", label:"DRAŽBA – OBÁLKA" };
   if(kind==="CRYPTO") return { emoji:"🟦", label:"KRYPTOTRANSAKCE" };
-  if(kind==="SETTLE") return { emoji:"🟥", label:"VYÚČTOVÁNÍ" };
+  if(kind==="SETTLE") return { emoji:"🟥", label:"AUDIT" };
   return { emoji:"", label:"" };
 }
 
@@ -40,7 +40,7 @@ function StepIcons({ phase, bizStep }){
   );
 }
 
-function PrivacyCard({ kind, mode, amountText, onReveal, onHide }){
+function PrivacyCard({ kind, mode, amountText, onReveal, onHide, onClose }){
   const b = badgeFor(kind);
   if(mode==="edit") return null;
   return (
@@ -49,6 +49,7 @@ function PrivacyCard({ kind, mode, amountText, onReveal, onHide }){
         <div className="privacyBadge">
           <span className="privacyEmoji">{b.emoji}</span>
           <span className="privacyLabel">{b.label}</span>
+          <button className="privacyClose" onClick={onClose} aria-label="Zavřít">✕</button>
         </div>
 
         {mode==="hidden" ? (
@@ -80,6 +81,12 @@ export default function GamePage(){
   const [aucPrivacy, setAucPrivacy] = useState("edit");
   const [cryptoPrivacy, setCryptoPrivacy] = useState("edit");
   const [settlePrivacy, setSettlePrivacy] = useState("edit");
+
+  // overlay visibility (so GM controls stay usable and players can dismiss overlays)
+  const [mlOverlayOpen, setMlOverlayOpen] = useState(true);
+  const [aucOverlayOpen, setAucOverlayOpen] = useState(true);
+  const [cryptoOverlayOpen, setCryptoOverlayOpen] = useState(true);
+  const [settleOverlayOpen, setSettleOverlayOpen] = useState(true);
 
   // inputs
   const [mlBid, setMlBid] = useState("");
@@ -135,10 +142,26 @@ export default function GamePage(){
   useEffect(()=>{
     const phase = gs?.phase;
     const step = gs?.bizStep;
-    if(phase==="BIZ" && step==="ML_BID"){ setMlPrivacy(gs?.biz?.mlBids?.[playerId]?.committed ? "hidden" : "edit"); }
-    if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){ setAucPrivacy(gs?.biz?.auction?.entries?.[playerId]?.committed ? "hidden" : "edit"); }
-    if(phase==="CRYPTO"){ setCryptoPrivacy(gs?.crypto?.entries?.[playerId]?.committed ? "hidden" : "edit"); }
-    if(phase==="SETTLE"){ setSettlePrivacy(gs?.settle?.entries?.[playerId]?.committed ? "hidden" : "edit"); }
+    if(phase==="BIZ" && step==="ML_BID"){
+      const committed = !!gs?.biz?.mlBids?.[playerId]?.committed;
+      setMlPrivacy(committed ? "hidden" : "edit");
+      setMlOverlayOpen(true);
+    }
+    if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){
+      const committed = !!gs?.biz?.auction?.entries?.[playerId]?.committed;
+      setAucPrivacy(committed ? "hidden" : "edit");
+      setAucOverlayOpen(true);
+    }
+    if(phase==="CRYPTO"){
+      const committed = !!gs?.crypto?.entries?.[playerId]?.committed;
+      setCryptoPrivacy(committed ? "hidden" : "edit");
+      setCryptoOverlayOpen(true);
+    }
+    if(phase==="SETTLE"){
+      const committed = !!gs?.settle?.entries?.[playerId]?.committed;
+      setSettlePrivacy(committed ? "hidden" : "edit");
+      setSettleOverlayOpen(true);
+    }
   }, [gs?.phase, gs?.bizStep, gs?.year]);
 
   const s = useMemo(()=> getSocket(), []);
@@ -150,6 +173,7 @@ export default function GamePage(){
     s.emit("commit_ml_bid", { gameId, playerId, amountUsd: amount }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setMlPrivacy("hidden"); // auto hide after commit
+      setMlOverlayOpen(true);
     });
   }
 
@@ -157,6 +181,7 @@ export default function GamePage(){
     s.emit("commit_auction_bid", { gameId, playerId, bidUsd: bid, usedLobbyist }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setAucPrivacy("hidden"); // auto hide after commit
+      setAucOverlayOpen(true);
     });
   }
 
@@ -170,6 +195,7 @@ export default function GamePage(){
     s.emit("commit_auction_final_bid", { gameId, playerId, finalBidUsd: finalBid }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setAucPrivacy("hidden");
+      setAucOverlayOpen(true);
     });
   }
 
@@ -183,6 +209,7 @@ export default function GamePage(){
     s.emit("commit_crypto", { gameId, playerId, deltas: cryptoD }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setCryptoPrivacy("hidden");
+      setCryptoOverlayOpen(true);
     });
   }
 
@@ -190,6 +217,7 @@ export default function GamePage(){
     s.emit("commit_settlement_ready", { gameId, playerId }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setSettlePrivacy("hidden");
+      setSettleOverlayOpen(true);
     });
   }
 
@@ -202,8 +230,8 @@ export default function GamePage(){
 
   const headerPhase =
     gs?.phase==="BIZ" ? "Byznysová fáze" :
-    gs?.phase==="CRYPTO" ? "Kryptoburza" :
-    gs?.phase==="SETTLE" ? "Vyúčtování" :
+    gs?.phase==="CRYPTO" ? "Krypto fáze" :
+    gs?.phase==="SETTLE" ? "Audit" :
     gs?.status==="LOBBY" ? "Lobby" :
     gs?.status==="GAME_OVER" ? "Konec hry" : "";
 
@@ -238,13 +266,10 @@ export default function GamePage(){
             <div className="muted">Díky za testování.</div>
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="TRENDS" ? (
-          <div className="card">
-            <div className="titleRow">
-              <div className="title">Trendy</div>
-              <button className="ghostBtn" onClick={()=>setTab("trends")}>Otevřít</button>
-            </div>
-            <div className="muted">Scrolluj doprava až na poslední rok. Budoucí trendy jsou otočené rubem (❓). Pokud máš experta, můžeš si odkrýt nejbližší skrytý rok.</div>
-          </div>
+          <TrendsPreviewCard
+            gs={gs}
+            onOpen={()=>setTab("trends")}
+          />
         ) : gs.phase==="BIZ" && gs.bizStep==="ML_BID" ? (
           <div className="card">
             <div className="title">Market Leader</div>
@@ -344,7 +369,7 @@ export default function GamePage(){
         ) : gs.phase==="SETTLE" ? (
           <div className="card">
             <div className="titleRow">
-              <div className="title">Vyúčtování</div>
+              <div className="title">Audit</div>
               <button className="ghostBtn" onClick={()=>setTab("accounting")}>Detail</button>
             </div>
             <div className="muted">Aplikace zobrazí částku pro vyrovnání. Ukazovací režim ukáže jen jedno číslo.</div>
@@ -369,31 +394,35 @@ export default function GamePage(){
       {/* privacy overlays */}
       <PrivacyCard
         kind="ML"
-        mode={gs?.phase==="BIZ" && gs?.bizStep==="ML_BID" && gs?.biz?.mlBids?.[playerId]?.committed ? mlPrivacy : "edit"}
+        mode={(mlOverlayOpen && gs?.phase==="BIZ" && gs?.bizStep==="ML_BID" && gs?.biz?.mlBids?.[playerId]?.committed) ? mlPrivacy : "edit"}
         amountText={(mlAmount==null) ? "NECHCI" : `${mlAmount} USD`}
         onReveal={()=>setMlPrivacy("reveal")}
         onHide={()=>setMlPrivacy("hidden")}
+        onClose={()=>setMlOverlayOpen(false)}
       />
       <PrivacyCard
         kind="AUCTION"
-        mode={gs?.phase==="BIZ" && gs?.bizStep==="AUCTION_ENVELOPE" && gs?.biz?.auction?.entries?.[playerId]?.committed ? aucPrivacy : "edit"}
+        mode={(aucOverlayOpen && gs?.phase==="BIZ" && gs?.bizStep==="AUCTION_ENVELOPE" && gs?.biz?.auction?.entries?.[playerId]?.committed) ? aucPrivacy : "edit"}
         amountText={(aucShownBid==null) ? "NECHCI" : `${aucShownBid} USD`}
         onReveal={()=>setAucPrivacy("reveal")}
         onHide={()=>setAucPrivacy("hidden")}
+        onClose={()=>setAucOverlayOpen(false)}
       />
       <PrivacyCard
         kind="CRYPTO"
-        mode={gs?.phase==="CRYPTO" && gs?.crypto?.entries?.[playerId]?.committed ? cryptoPrivacy : "edit"}
+        mode={(cryptoOverlayOpen && gs?.phase==="CRYPTO" && gs?.crypto?.entries?.[playerId]?.committed) ? cryptoPrivacy : "edit"}
         amountText={`${cryptoDelta>0?"+":""}${cryptoDelta||0} USD`}
         onReveal={()=>setCryptoPrivacy("reveal")}
         onHide={()=>setCryptoPrivacy("hidden")}
+        onClose={()=>setCryptoOverlayOpen(false)}
       />
       <PrivacyCard
         kind="SETTLE"
-        mode={gs?.phase==="SETTLE" && gs?.settle?.entries?.[playerId]?.committed ? settlePrivacy : "edit"}
+        mode={(settleOverlayOpen && gs?.phase==="SETTLE" && gs?.settle?.entries?.[playerId]?.committed) ? settlePrivacy : "edit"}
         amountText={`${settleAmount>=0?"+":""}${settleAmount??0} USD`}
         onReveal={()=>setSettlePrivacy("reveal")}
         onHide={()=>setSettlePrivacy("hidden")}
+        onClose={()=>setSettleOverlayOpen(false)}
       />
 
       {/* Tabs */}
@@ -491,6 +520,58 @@ function TrendsPanel({ gs, playerId, onRevealGlobal, onRevealCrypto }){
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function TrendsPreviewCard({ gs, onOpen }){
+  const y = gs?.year || 1;
+  const data = gs?.trends?.byYear?.[String(y)];
+  return (
+    <div className="card">
+      <div className="titleRow">
+        <div>
+          <div className="title">Trendy • Rok {y}</div>
+          <div className="muted">Aktuální trendy jsou vidět hned. Pro budoucnost použij <b>Spekulace</b>.</div>
+        </div>
+        <button className="ghostBtn" onClick={onOpen}>Spekulace</button>
+      </div>
+
+      <div className="trendPreview">
+        <div className="trendPreviewBlock">
+          <div className="secTitle">Globální</div>
+          <div className="previewRow">
+            {(data?.globals||[]).map(t=>(
+              <div key={t.trendId} className="previewCard">
+                <div className="previewIcon">{t.icon||"🌐"}</div>
+                <div className="previewName">{t.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="trendPreviewBlock">
+          <div className="secTitle">Krypto</div>
+          <div className="previewRow">
+            <div className="previewCard wide">
+              <div className="previewIcon">{data?.crypto?.icon||"➡️"}</div>
+              <div className="previewName">{data?.crypto?.name||"—"}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="trendPreviewBlock">
+          <div className="secTitle">Regionální</div>
+          <div className="regionalMini">
+            {Object.values(data?.regional||{}).map(t=>(
+              <div key={t.trendId} className="regionalDot">
+                <span>📍</span>
+                <span>{t.continent}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

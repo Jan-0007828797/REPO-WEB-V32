@@ -156,6 +156,14 @@ button{ font-family:inherit; }
   margin-bottom: 10px;
 }
 
+.sectionLabel{
+  margin-top: 12px;
+  margin-bottom: 8px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  color: rgba(243,246,255,.88);
+}
+
 /* ---------- App shell (game) ---------- */
 
 .screen{
@@ -226,6 +234,136 @@ button{ font-family:inherit; }
   gap: 12px;
 }
 
+/* GM controls must always stay clickable */
+.gmBar{
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  bottom: 86px; /* above bottom bar */
+  z-index: 40;
+  display:flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(15,23,42,.82);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0,0,0,.35);
+}
+
+/* Bottom bar (WhatsApp-ish) */
+.bottomBar{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 35;
+  display:flex;
+  justify-content: space-around;
+  gap: 6px;
+  padding: 10px 10px 12px;
+  background: rgba(10,15,26,.88);
+  border-top: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(12px);
+}
+.tabBtn{
+  width: 25%;
+  border: none;
+  background: transparent;
+  color: rgba(243,246,255,.78);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 16px;
+  cursor:pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+.tabBtn span{ font-size: 12px; }
+.tabBtn:active{ transform: translateY(1px); }
+
+/* Privacy overlay: not full-screen, does not block GM controls */
+.privacyWrap{
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 92px;
+  bottom: 170px;
+  z-index: 30;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+.privacyCard{
+  width: min(520px, calc(100vw - 28px));
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(15,23,42,.86);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  padding: 14px;
+  pointer-events:auto;
+}
+.privacyBadge{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  justify-content: space-between;
+}
+.privacyEmoji{ font-size: 22px; }
+.privacyLabel{ font-weight: 900; letter-spacing: .4px; }
+.privacyClose{
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+  color: rgba(243,246,255,.92);
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.privacyHidden{
+  text-align:center;
+  font-size: 54px;
+  padding: 14px 0 10px;
+}
+.privacyAmount{
+  text-align:center;
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  padding: 18px 0 10px;
+}
+
+/* Trends preview */
+.trendPreview{ margin-top: 12px; display:flex; flex-direction:column; gap: 14px; }
+.previewRow{ display:flex; gap: 10px; flex-wrap:wrap; }
+.previewCard{
+  flex: 1 1 180px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  padding: 12px;
+}
+.previewCard.wide{ flex: 1 1 100%; }
+.previewIcon{ font-size: 22px; }
+.previewName{ margin-top: 6px; font-weight: 900; }
+.regionalMini{ display:flex; flex-wrap:wrap; gap: 8px; }
+.regionalDot{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.05);
+  color: rgba(243,246,255,.80);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .titleRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .title{ font-size: 18px; font-weight: 900; }
 .muted{ color: var(--muted); font-size: 14px; line-height: 1.35; }
@@ -272,16 +410,6 @@ button{ font-family:inherit; }
 .primaryBtn.big, .ghostBtn.big{ width: 100%; font-size: 18px; padding: 16px 14px; }
 .full{ width:100%; margin-top: 10px; }
 .checkRow{ display:flex; align-items:center; gap:10px; color: var(--muted); font-weight: 700; }
-
-.gmBar{
-  display:flex;
-  gap: 10px;
-  justify-content: space-between;
-  padding: 10px;
-  border-radius: 18px;
-  border:1px dashed rgba(255,255,255,.14);
-  background: rgba(255,255,255,.04);
-}
 
 .toast{
   position: sticky;
@@ -425,66 +553,7 @@ button{ font-family:inherit; }
   gap: 10px;
 }
 
-.bottomBar{
-  position: fixed;
-  left:0; right:0; bottom:0;
-  padding: 10px 10px 12px;
-  background: rgba(15,23,42,.88);
-  border-top: 1px solid var(--stroke);
-  backdrop-filter: blur(10px);
-  display:flex;
-  gap: 8px;
-  justify-content:space-around;
-  z-index: 40;
-}
-.tabBtn{
-  flex: 1 1 auto;
-  border:1px solid var(--stroke);
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-  padding: 10px 10px;
-  border-radius: 16px;
-  cursor:pointer;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap: 4px;
-  font-weight: 900;
-  font-size: 12px;
-}
-.tabBtn span{ font-size: 11px; color: var(--muted); font-weight: 800; }
-
-/* privacy overlay */
-.privacyWrap{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.65);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index: 60;
-  padding: 16px;
-}
-.privacyCard{
-  width: min(520px, 100%);
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: linear-gradient(180deg, rgba(15,23,42,.96), rgba(15,23,42,.90));
-  box-shadow: 0 30px 80px rgba(0,0,0,.60);
-  padding: 16px;
-  text-align:center;
-}
-.privacyBadge{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.privacyEmoji{ font-size: 18px; }
-.privacyLabel{ font-weight: 900; letter-spacing:.08em; color: var(--muted); font-size: 12px; }
-.privacyHidden{ font-size: 64px; margin: 18px 0; }
-.privacyAmount{ font-size: 46px; font-weight: 900; margin: 18px 0; }
+.bigNumber{ font-size: 42px; font-weight: 900; text-align:center; margin: 8px 0 12px; }
 .bigNumber{ font-size: 42px; font-weight: 900; text-align:center; margin: 8px 0 12px; }
 
 .listItem{

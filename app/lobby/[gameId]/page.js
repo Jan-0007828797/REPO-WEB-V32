@@ -32,6 +32,7 @@ export default function Lobby(){
           <div style={{flex:"1 1 220px"}}>{qr ? <img src={qr} alt="QR" style={{width:"100%",maxWidth:280,borderRadius:16,background:"rgba(255,255,255,.92)",padding:10}}/> : null}</div>
           <div style={{flex:"2 1 240px"}}>
             {cfg ? <div className="pills"><span className="pill">🗓️ {cfg.yearsTotal}</span><span className="pill">👥 {cfg.maxPlayers}</span></div> : null}
+            <div className="sectionLabel">Připojení hráči</div>
             <ul className="list">{players.map(p=>(<li key={p.playerId}><span>{p.name}</span><span className="badge">{p.role==="GM"?"GM":"Hráč"}</span></li>))}</ul>
             {isGM ? <button className="btn" disabled={!canStart} onClick={start}>▶ Spustit</button> : null}
           </div>
