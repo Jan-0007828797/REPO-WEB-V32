@@ -589,3 +589,19 @@ button{ font-family:inherit; }
   border:1px solid rgba(255,255,255,.12);
   background: rgba(0,0,0,.22);
 }
+
+
+/* v3.2.5 crypto trend arrows */
+.cryptoCard .cryptoGrid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;}
+.cryptoCard .cryptoRow{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,0.06); }
+.cryptoCard .cryptoRow .coin{ font-weight:800; letter-spacing:0.5px; }
+.cryptoCard .cryptoRow .coef{ font-variant-numeric: tabular-nums; opacity:0.9; }
+.cryptoCard .cryptoRow.up{ outline:1px solid rgba(46, 204, 113, 0.35); }
+.cryptoCard .cryptoRow.down{ outline:1px solid rgba(231, 76, 60, 0.35); }
+.cryptoCard .cryptoRow.flat{ outline:1px solid rgba(52, 152, 219, 0.35); }
+
+.cryptoPreview .cryptoMiniGrid{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+.cryptoPreview .cryptoMini{ display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,0.06); }
+.cryptoPreview .cryptoMini.up{ outline:1px solid rgba(46, 204, 113, 0.35); }
+.cryptoPreview .cryptoMini.down{ outline:1px solid rgba(231, 76, 60, 0.35); }
+.cryptoPreview .cryptoMini.flat{ outline:1px solid rgba(52, 152, 219, 0.35); }

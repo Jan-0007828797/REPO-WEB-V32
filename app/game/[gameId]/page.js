@@ -491,7 +491,7 @@ export default function GamePage(){
       {/* Tabs */}
       {tab==="trends" ? (
         <Modal title="Trendy" onClose={()=>setTab(null)}>
-          <TrendsPanel gs={gs} playerId={playerId} onRevealGlobal={()=>s.emit("reveal_global_next_year",{gameId,playerId},()=>{})} onRevealCrypto={()=>s.emit("reveal_crypto_next_year",{gameId,playerId},()=>{})} />
+          <TrendsPanel gs={gs} playerId={playerId} onOpenTrend={(t)=>setTrendModal(t)} onRevealGlobal={()=>s.emit("reveal_global_next_year",{gameId,playerId},()=>{})} onRevealCrypto={()=>s.emit("reveal_crypto_next_year",{gameId,playerId},()=>{})} />
         </Modal>
       ) : null}
 
@@ -522,7 +522,7 @@ export default function GamePage(){
   );
 }
 
-function TrendsPanel({ gs, playerId, onRevealGlobal, onRevealCrypto }){
+function TrendsPanel({ gs, playerId, onOpenTrend, onRevealGlobal, onRevealCrypto }){
   if(!gs?.trends) return <div className="muted">Trendy nejsou načtené.</div>;
   const yearsTotal = gs.config?.yearsTotal || 4;
   const currentYear = gs.year || 1;
@@ -562,13 +562,13 @@ function TrendsPanel({ gs, playerId, onRevealGlobal, onRevealCrypto }){
               <div className="secTitle">Globální</div>
               <div className="cardRow">
                 {data?.globals?.map((t)=>(
-                  <TrendCard key={t.trendId} revealed={gRevealed} title={t.name} icon={t.icon||"🌐"} clickable={gRevealed} onClick={()=> setTrendModal(t)} />
+                  <TrendCard key={t.trendId} revealed={gRevealed} title={t.name} icon={t.icon||"🌐"} clickable={gRevealed} onClick={()=> onOpenTrend && onOpenTrend(t)} />
                 ))}
               </div>
 
               <div className="secTitle">Krypto</div>
               <div className="cardRow">
-                <TrendCard revealed={cRevealed} title={data?.crypto?.name} icon={data?.crypto?.icon||"⬛"} wide />
+                <CryptoTrendCard revealed={cRevealed} crypto={data?.crypto} />
               </div>
 
               <div className="secTitle">Regionální</div>
@@ -588,7 +588,7 @@ function TrendsPanel({ gs, playerId, onRevealGlobal, onRevealCrypto }){
   );
 }
 
-function TrendsPreviewCard({ gs, onOpen }){
+function TrendsPreviewCard({ gs, onOpen, onOpenTrend }){
   const y = gs?.year || 1;
   const data = gs?.trends?.byYear?.[String(y)];
   return (
@@ -606,7 +606,7 @@ function TrendsPreviewCard({ gs, onOpen }){
           <div className="secTitle">Globální</div>
           <div className="previewRow">
             {(data?.globals||[]).map(t=>(
-              <div key={t.trendId} className="previewCard clickable" onClick={()=>setTrendModal(t)} role="button" tabIndex={0}>
+              <div key={t.trendId} className="previewCard clickable" onClick={()=>onOpenTrend && onOpenTrend(t)} role="button" tabIndex={0}>
                 <div className="previewIcon">{t.icon||"🌐"}</div>
                 <div className="previewName">{t.name}</div>
               </div>
@@ -617,10 +617,7 @@ function TrendsPreviewCard({ gs, onOpen }){
         <div className="trendPreviewBlock">
           <div className="secTitle">Krypto</div>
           <div className="previewRow">
-            <div className="previewCard wide">
-              <div className="previewIcon">{data?.crypto?.icon||"➡️"}</div>
-              <div className="previewName">{data?.crypto?.name||"—"}</div>
-            </div>
+            <CryptoTrendPreview crypto={data?.crypto} />
           </div>
         </div>
 
@@ -635,6 +632,68 @@ function TrendsPreviewCard({ gs, onOpen }){
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+function arrowForCoeff(k){
+  if(k>1) return { sym:"⬆️", cls:"up", label:"roste" };
+  if(k<1) return { sym:"⬇️", cls:"down", label:"klesá" };
+  return { sym:"➡️", cls:"flat", label:"beze změny" };
+}
+
+function CryptoTrendCard({ revealed, crypto }){
+  if(!revealed){
+    return (
+      <div className="trendCard wide back">
+        <div className="trendBack">❓</div>
+      </div>
+    );
+  }
+  const coeff = crypto?.coeff || {};
+  const coins = ["BTC","ETH","LTC","SIA"];
+  return (
+    <div className="trendCard wide cryptoCard">
+      <div className="trendTop">
+        <div className="trendIcon">₿</div>
+        <div className="trendTitle">{crypto?.name || "Kryptotrend"}</div>
+      </div>
+      <div className="cryptoGrid">
+        {coins.map(c=>{
+          const k = Number(coeff[c] ?? 1);
+          const a = arrowForCoeff(k);
+          return (
+            <div key={c} className={"cryptoRow "+a.cls}>
+              <div className="coin">{c}</div>
+              <div className="arrow">{a.sym}</div>
+              <div className="coef">×{k}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CryptoTrendPreview({ crypto }){
+  const coeff = crypto?.coeff || {};
+  const coins = ["BTC","ETH","LTC","SIA"];
+  return (
+    <div className="previewCard wide cryptoPreview">
+      <div className="previewName">{crypto?.name || "Kryptotrend"}</div>
+      <div className="cryptoMiniGrid">
+        {coins.map(c=>{
+          const k = Number(coeff[c] ?? 1);
+          const a = arrowForCoeff(k);
+          return (
+            <div key={c} className={"cryptoMini "+a.cls}>
+              <span className="coin">{c}</span>
+              <span className="arrow">{a.sym}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
