@@ -542,6 +542,9 @@ button{ font-family:inherit; }
   z-index: 500;
 }
 
+/* Always-on-top modals (used for nested detail overlays) */
+.modalBackdrop.superTop{ z-index: 1200; }
+
 .modalBackdrop.top{
   align-items:flex-start;
   padding-top: calc(14px + env(safe-area-inset-top));
@@ -618,6 +621,26 @@ button{ font-family:inherit; }
 
 .cryptoPreview .cryptoMini.up .arrow{ color: var(--primary); }
 .cryptoPreview .cryptoMini.down .arrow{ color: var(--danger); }
+.cryptoPreview .cryptoMini.flat .arrow{ color: var(--accent); }
+
+/* Regional trend symbol buttons */
+.regSymBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,.06);
+  cursor: pointer;
+}
+.regSymBtn:active{ transform: translateY(1px); }
+.regSymIcon{ font-size: 18px; }
+.regRow{ display:flex; align-items:center; justify-content:space-between; gap: 10px; padding: 10px 12px; border-radius: 16px; border:1px solid var(--stroke); background: rgba(255,255,255,.06); margin-top: 8px; }
+.regMeta{ display:flex; flex-direction:column; }
+.regName{ font-weight: 900; }
+.regCont{ font-size: 12px; opacity: .85; }
 .cryptoPreview .cryptoMini.flat .arrow{ color: var(--accent); }
 .cryptoCard .cryptoRow.up{ outline:1px solid rgba(46, 204, 113, 0.35); }
 .cryptoCard .cryptoRow.down{ outline:1px solid rgba(231, 76, 60, 0.35); }

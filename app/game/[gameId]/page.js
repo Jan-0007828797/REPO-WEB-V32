@@ -7,6 +7,23 @@ import { loadPlayerId } from "../../../lib/storage";
 import { playClock, stopClock, playRing, stopRing } from "../../../lib/audio";
 import { BottomBar, Modal } from "../../ui";
 
+function SuperTopModal({ title, onClose, children }){
+  // Same behavior/markup as Modal, but guaranteed above other modals.
+  useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
+  return (
+    <div className="modalBackdrop top superTop" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
+      <div className="modal">
+        <div className="modalHeader">
+          <div style={{fontWeight:900,fontSize:18}}>{title}</div>
+          <button className="iconBtn" onClick={onClose}>✕</button>
+        </div>
+        <div style={{height:1,background:"rgba(255,255,255,.10)",margin:"12px 0"}}></div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function badgeFor(kind){
   if(kind==="ML") return { emoji:"🟩", label:"MARKET LEADER" };
   if(kind==="AUCTION") return { emoji:"🟨", label:"DRAŽBA – OBÁLKA" };
@@ -76,6 +93,7 @@ export default function GamePage(){
   const [err, setErr] = useState("");
   const [tab, setTab] = useState(null);
   const [trendModal, setTrendModal] = useState(null); // {name, icon, desc}
+  const [regionalModal, setRegionalModal] = useState(null); // {continent, name, icon, desc}
 
   // local privacy modes
   const [mlPrivacy, setMlPrivacy] = useState("edit");       // edit|hidden|reveal
@@ -270,6 +288,8 @@ export default function GamePage(){
           <TrendsPreviewCard
             gs={gs}
             onOpen={()=>setTab("trends")}
+            onOpenTrend={(t)=>setTrendModal(t)}
+            onOpenRegional={(t)=>setRegionalModal(t)}
           />
         ) : gs.phase==="BIZ" && gs.bizStep==="ML_BID" ? (
           <div className="card">
@@ -393,67 +413,7 @@ export default function GamePage(){
       <BottomBar onTab={setTab} />
 
 
-      {trendModal ? (
-        <Modal variant="top" title={`${trendModal.icon||"🌐"} ${trendModal.name||"Trend"}`} onClose={()=>setTrendModal(null)}>
-          <div className="modalText">
-            {trendModal.desc ? trendModal.desc : "Detail trendu není k dispozici."}
-          </div>
-
-          {(() => {
-            const inv = gs?.inventory?.[playerId] || { experts: [] };
-            const lawyerLeft = (inv.experts||[]).filter(e=>e.functionKey==="LAWYER_TRENDS" && !e.used).length;
-            const allowed = !!trendModal?.lawyer?.allowed;
-            const req = trendModal?.lawyer?.phase;
-            const phase = gs?.phase;
-            const biz = gs?.bizStep;
-
-            const canNow =
-              allowed && (
-                (req==="BIZ_TRENDS_ONLY" && phase==="BIZ" && biz==="TRENDS") ||
-                (req==="BIZ_MOVE_ONLY" && phase==="BIZ" && biz==="MOVE") ||
-                (req==="AUDIT_ANYTIME_BEFORE_CLOSE" && phase==="SETTLE")
-              );
-
-            const y = String(gs?.year||1);
-            const protectedNow = !!gs?.lawyer?.protections?.[playerId]?.[y]?.[trendModal.key];
-
-            function useLawyer(){
-              const s = getSocket();
-              s.emit("use_lawyer_on_trend", { gameId, playerId, trendKey: trendModal.key }, (res)=>{
-                // no toast system in MVP; simple feedback
-                if(!res?.ok) alert(res?.error || "Chyba");
-              });
-            }
-
-            const phaseHint =
-              req==="BIZ_TRENDS_ONLY" ? "Právníka lze použít pouze ve fázi Trendy." :
-              req==="BIZ_MOVE_ONLY" ? "Právníka lze použít pouze ve fázi Investice (pohyb)." :
-              req==="AUDIT_ANYTIME_BEFORE_CLOSE" ? "Právníka lze použít kdykoliv před uzavřením Auditu." :
-              "Právníka nelze použít.";
-
-            return (
-              <div className="lawyerBox">
-                <div className="secTitle" style={{marginTop:12}}>Právník</div>
-
-                {!allowed ? (
-                  <div className="muted">Na tento trend nelze použít Právníka.</div>
-                ) : protectedNow ? (
-                  <div className="pill" style={{display:"inline-flex"}}>✅ Ochráněno (tento rok)</div>
-                ) : lawyerLeft<1 ? (
-                  <div className="muted">Právník není k dispozici.</div>
-                ) : (
-                  <>
-                    <div className="muted">{phaseHint}</div>
-                    <button className={"primaryBtn full"+(canNow? "":" disabled")} disabled={!canNow} onClick={useLawyer}>
-                      Použít právníka
-                    </button>
-                  </>
-                )}
-              </div>
-            );
-          })()}
-        </Modal>
-      ) : null}
+      {/* NOTE: trend/regional detail overlays are rendered at the very end (superTop) so they always stay above other modals. */}
       {/* privacy overlays */}
       <PrivacyCard
         kind="ML"
@@ -491,7 +451,7 @@ export default function GamePage(){
       {/* Tabs */}
       {tab==="trends" ? (
         <Modal title="Trendy" onClose={()=>setTab(null)}>
-          <TrendsPanel gs={gs} playerId={playerId} onOpenTrend={(t)=>setTrendModal(t)} onRevealGlobal={()=>s.emit("reveal_global_next_year",{gameId,playerId},()=>{})} onRevealCrypto={()=>s.emit("reveal_crypto_next_year",{gameId,playerId},()=>{})} />
+          <TrendsPanel gs={gs} playerId={playerId} onOpenTrend={(t)=>setTrendModal(t)} onOpenRegional={(t)=>setRegionalModal(t)} onRevealGlobal={()=>s.emit("reveal_global_next_year",{gameId,playerId},()=>{})} onRevealCrypto={()=>s.emit("reveal_crypto_next_year",{gameId,playerId},()=>{})} />
         </Modal>
       ) : null}
 
@@ -509,7 +469,7 @@ export default function GamePage(){
 
       {tab==="accounting" ? (
         <Modal title="Účetnictví" onClose={()=>setTab(null)}>
-          <AccountingPanel gs={gs} playerId={playerId} />
+          <AccountingPanel gs={gs} playerId={playerId} gameId={gameId} />
         </Modal>
       ) : null}
 
@@ -518,11 +478,79 @@ export default function GamePage(){
           <pre style={{whiteSpace:"pre-wrap"}}>{JSON.stringify(gs, null, 2)}</pre>
         </Modal>
       ) : null}
+
+      {trendModal ? (
+        <SuperTopModal title={`${trendModal.icon||"🌐"} ${trendModal.name||"Trend"}`} onClose={()=>setTrendModal(null)}>
+          <div className="modalText">
+            {trendModal.desc ? trendModal.desc : "Detail trendu není k dispozici."}
+          </div>
+
+          {(() => {
+            const inv = gs?.inventory?.[playerId] || { experts: [] };
+            const lawyerLeft = (inv.experts||[]).filter(e=>e.functionKey==="LAWYER_TRENDS" && !e.used).length;
+            const allowed = !!trendModal?.lawyer?.allowed;
+            const req = trendModal?.lawyer?.phase;
+            const phase = gs?.phase;
+            const biz = gs?.bizStep;
+
+            const canNow =
+              allowed && (
+                (req==="BIZ_TRENDS_ONLY" && phase==="BIZ" && biz==="TRENDS") ||
+                (req==="BIZ_MOVE_ONLY" && phase==="BIZ" && biz==="MOVE") ||
+                (req==="AUDIT_ANYTIME_BEFORE_CLOSE" && phase==="SETTLE")
+              );
+
+            const y = String(gs?.year||1);
+            const protectedNow = !!gs?.lawyer?.protections?.[playerId]?.[y]?.[trendModal.key];
+
+            function useLawyer(){
+              const s = getSocket();
+              s.emit("use_lawyer_on_trend", { gameId, playerId, trendKey: trendModal.key }, (res)=>{
+                if(!res?.ok) alert(res?.error || "Chyba");
+              });
+            }
+
+            const phaseHint =
+              req==="BIZ_TRENDS_ONLY" ? "Právníka lze použít pouze ve fázi Trendy." :
+              req==="BIZ_MOVE_ONLY" ? "Právníka lze použít pouze ve fázi Investice (pohyb)." :
+              req==="AUDIT_ANYTIME_BEFORE_CLOSE" ? "Právníka lze použít kdykoliv před uzavřením Auditu." :
+              "Právníka nelze použít.";
+
+            return (
+              <div className="lawyerBox">
+                <div className="secTitle" style={{marginTop:12}}>Právník</div>
+
+                {!allowed ? (
+                  <div className="muted">Na tento trend nelze použít Právníka.</div>
+                ) : protectedNow ? (
+                  <div className="pill" style={{display:"inline-flex"}}>✅ Ochráněno (tento rok)</div>
+                ) : lawyerLeft<1 ? (
+                  <div className="muted">Právník není k dispozici.</div>
+                ) : (
+                  <>
+                    <div className="muted">{phaseHint}</div>
+                    <button className={"primaryBtn full"+(canNow? "":" disabled")} disabled={!canNow} onClick={useLawyer}>
+                      Použít právníka
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+        </SuperTopModal>
+      ) : null}
+
+      {regionalModal ? (
+        <SuperTopModal title={`${regionalModal.icon||"📍"} ${regionalModal.continent||"Kontinent"}`} onClose={()=>setRegionalModal(null)}>
+          <div className="secTitle">{regionalModal.name||"Regionální trend"}</div>
+          <div className="modalText" style={{marginTop:6}}>{regionalModal.desc || "Detail není k dispozici."}</div>
+        </SuperTopModal>
+      ) : null}
     </div>
   );
 }
 
-function TrendsPanel({ gs, playerId, onOpenTrend, onRevealGlobal, onRevealCrypto }){
+function TrendsPanel({ gs, playerId, onOpenTrend, onOpenRegional, onRevealGlobal, onRevealCrypto }){
   if(!gs?.trends) return <div className="muted">Trendy nejsou načtené.</div>;
   const yearsTotal = gs.config?.yearsTotal || 4;
   const currentYear = gs.year || 1;
@@ -572,11 +600,16 @@ function TrendsPanel({ gs, playerId, onOpenTrend, onRevealGlobal, onRevealCrypto
               </div>
 
               <div className="secTitle">Regionální</div>
-              <div className="regionalGrid">
+              <div>
                 {Object.values(data?.regional||{}).map((t)=>(
-                  <div key={t.trendId} className="regionalToken">
-                    <span>📍</span>
-                    <span className="muted">{t.continent}</span>
+                  <div key={t.trendId} className="regRow">
+                    <div className="regMeta">
+                      <div className="regName">{t.continent}</div>
+                      <div className="regCont muted">{t.name}</div>
+                    </div>
+                    <button className="regSymBtn" onClick={()=>onOpenRegional && onOpenRegional(t)} aria-label="Detail regionálního trendu">
+                      <span className="regSymIcon">{t.icon || "📍"}</span>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -588,7 +621,7 @@ function TrendsPanel({ gs, playerId, onOpenTrend, onRevealGlobal, onRevealCrypto
   );
 }
 
-function TrendsPreviewCard({ gs, onOpen, onOpenTrend }){
+function TrendsPreviewCard({ gs, onOpen, onOpenTrend, onOpenRegional }){
   const y = gs?.year || 1;
   const data = gs?.trends?.byYear?.[String(y)];
   return (
@@ -626,8 +659,10 @@ function TrendsPreviewCard({ gs, onOpen, onOpenTrend }){
           <div className="regionalMini">
             {Object.values(data?.regional||{}).map(t=>(
               <div key={t.trendId} className="regionalDot">
-                <span>📍</span>
                 <span>{t.continent}</span>
+                <button className="regSymBtn" onClick={()=>onOpenRegional && onOpenRegional(t)} aria-label="Detail regionálního trendu">
+                  <span className="regSymIcon">{t.icon || "📍"}</span>
+                </button>
               </div>
             ))}
           </div>
@@ -759,21 +794,100 @@ function ExpertsPanel({ inv }){
   );
 }
 
-function AccountingPanel({ gs, playerId }){
-  const entry = gs?.settle?.entries?.[playerId];
-  if(!entry) return <div className="muted">Vyúčtování ještě není vypočítané. Ve fázi Vyúčtování klikni „Potvrdit připraven“.</div>;
+function AccountingPanel({ gs, playerId, gameId }){
+  const inv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
+  const baseUsd = (inv.investments||[]).reduce((s,c)=>s + Number(c.usdProduction||0), 0);
+  // (v3 test) region/global bonus rules are not fully encoded; show nominal placeholders.
+  const regionalBonusUsd = 0;
+  const globalBonusUsd = 0;
+
+  const electricityUsd = (inv.miningFarms||[]).reduce((s,c)=>s + Number(c.electricityUSD||0), 0);
+  const cryptoProd = { BTC:0, ETH:0, LTC:0, SIA:0 };
+  for(const mf of (inv.miningFarms||[])){
+    const sym = mf.crypto;
+    if(sym && cryptoProd[sym]!=null) cryptoProd[sym] += Number(mf.cryptoProduction||0);
+  }
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  function openPreview(){
+    setPreviewOpen(true);
+    setLoading(true);
+    const s = getSocket();
+    s.emit("preview_audit", { gameId, playerId }, (res)=>{
+      setLoading(false);
+      if(!res?.ok){
+        setPreview({ error: res?.error || "Chyba" });
+      }else{
+        setPreview({ settlementUsd: res.settlementUsd, breakdown: res.breakdown||[] });
+      }
+    });
+  }
+
   return (
     <div>
-      <div className="bigNumber">{entry.settlementUsd>=0?"+":""}{entry.settlementUsd} USD</div>
-      <div className="secTitle">Rozpad</div>
+      <button className="ghostBtn full" onClick={openPreview}>Předběžný audit</button>
+
+      <div className="secTitle" style={{marginTop:12}}>Tradiční investice</div>
       <div className="list">
-        {(entry.breakdown||[]).map((b, idx)=>(
-          <div key={idx} className="listItem">
-            <div>{b.label}</div>
-            <div style={{fontWeight:800}}>{b.usd>=0?"+":""}{b.usd} USD</div>
-          </div>
-        ))}
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Základní produkce</div>
+          <div style={{fontWeight:900,color:"var(--primary)"}}>+{baseUsd} USD</div>
+        </div>
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Regionální bonus</div>
+          <div style={{fontWeight:900,color:"var(--primary)"}}>+{regionalBonusUsd} USD</div>
+        </div>
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Globální bonus</div>
+          <div style={{fontWeight:900,color:"var(--primary)"}}>+{globalBonusUsd} USD</div>
+        </div>
       </div>
+
+      <div className="secTitle" style={{marginTop:16}}>Mining farmy</div>
+      <div className="list">
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Elektřina</div>
+          <div style={{fontWeight:900,color:"var(--danger)"}}>−{electricityUsd} USD</div>
+        </div>
+        {(["BTC","ETH","LTC","SIA"]).map(sym=>{
+          const v = cryptoProd[sym] || 0;
+          return (
+            <div key={sym} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>{sym} produkce / rok</div>
+              <div style={{fontWeight:900,color:"var(--primary)"}}>+{v} ks</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {previewOpen ? (
+        <SuperTopModal title="Předběžný audit" onClose={()=>setPreviewOpen(false)}>
+          {loading ? (
+            <div className="muted">Počítám…</div>
+          ) : preview?.error ? (
+            <div className="muted">{preview.error}</div>
+          ) : (
+            <>
+              <div className="bigNumber">{(preview?.settlementUsd||0)>=0?"+":""}{preview?.settlementUsd||0} USD</div>
+              <div className="secTitle">Rozpad</div>
+              <div className="list">
+                {(preview?.breakdown||[]).map((b, idx)=>(
+                  <div key={idx} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>{b.label}</div>
+                    <div style={{fontWeight:900}}>{b.usd>=0?"+":""}{b.usd} USD</div>
+                  </div>
+                ))}
+              </div>
+              <div className="muted" style={{marginTop:10}}>
+                Pozn.: Předběžný audit je simulace pro test (nezavírá rok).
+              </div>
+            </>
+          )}
+        </SuperTopModal>
+      ) : null}
     </div>
   );
 }
