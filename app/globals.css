@@ -312,8 +312,92 @@ button{ font-family:inherit; }
   background: linear-gradient(180deg, rgba(10,18,36,.92), rgba(10,18,36,.72));
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow);
-  width: min(220px, calc(100vw - 24px));
+  /* Requested: half-width buttons/stack (keep top-right) */
+  width: min(140px, calc(100vw - 24px));
 }
+.gmBar .primaryBtn,
+.gmBar .ghostBtn{
+  width: 50%;
+  align-self: flex-end;
+}
+
+
+/* Form column (input + primary + secondary stacked) */
+.formCol{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+/* Markets as continent rows */
+.marketTable{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+.marketRow{
+  display:flex;
+  gap: 10px;
+  align-items:stretch;
+}
+.marketRowLabel{
+  flex: 0 0 120px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border:1px solid rgba(255,255,255,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  color: rgba(245,247,255,.90);
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+.marketRowCells{
+  flex: 1 1 auto;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.marketRowCells.farms{
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.marketCell{
+  position: relative;
+  text-align:left;
+  padding: 12px;
+  border-radius: 16px;
+  border:1px solid rgba(255,255,255,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  box-shadow: 0 16px 42px rgba(0,0,0,.30);
+  color: rgba(245,247,255,.94);
+  min-height: 74px;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.marketCell:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+.marketCell:active{ transform: translateY(0px) scale(.99); }
+.marketCell.placeholder{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(245,247,255,.55);
+  font-weight: 800;
+}
+.marketCellTop{ display:flex; justify-content:space-between; gap: 10px; align-items:flex-start; }
+.marketCellTitle{ font-weight: 950; font-size: 14px; }
+.marketCellTag{ font-size: 11px; color: rgba(245,247,255,.70); }
+.marketCellMeta{ margin-top: 4px; font-size: 11px; color: rgba(245,247,255,.62); }
+
+/* Category colors (industry/mining/agri) */
+.marketCell.industry{ border-color: rgba(56,189,248,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(56,189,248,.08) inset; }
+.marketCell.mining{ border-color: rgba(245,158,11,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(245,158,11,.08) inset; }
+.marketCell.agri{ border-color: rgba(52,211,153,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(52,211,153,.08) inset; }
+.marketCell.farm{ border-color: rgba(167,139,250,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(167,139,250,.08) inset; }
+
+.marketCell.locked{ opacity: .55; filter: grayscale(.2); }
+.marketCell.mine{ outline: 2px solid rgba(56,189,248,.40); }
+
 
 
 /* Bottom bar (WhatsApp-ish) */
@@ -473,6 +557,19 @@ button{ font-family:inherit; }
   gap: 10px;
   margin-top: 12px;
 }
+/* golden rule: keep button styles identical; only reposition confirm under input */
+.formRow.stackConfirm{
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.formRow.stackConfirm .inputBig{
+  flex: 1 1 100%;
+}
+.formRow.stackConfirm .primaryBtn{
+  flex: 0 0 auto;
+  width: auto;
+}
+
 .inputBig{
   flex: 1 1 auto;
   padding: 16px 14px;
@@ -851,4 +948,5 @@ button{ font-family:inherit; }
 
 /* Modal stacking helper: always on top */
 .modalBackdrop.top{ z-index: 260; }
-.modalBackdrop.superTop{ z-index: 280; }
+.modalBackdrop.superTop{ z-index: 9999 !important; }
+.modalBackdrop{ z-index: 600; }
