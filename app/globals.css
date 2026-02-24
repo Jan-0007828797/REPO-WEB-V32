@@ -566,8 +566,8 @@ button{ font-family:inherit; }
   flex: 1 1 100%;
 }
 .formRow.stackConfirm .primaryBtn{
-  flex: 0 0 auto;
-  width: auto;
+  flex: 1 1 100%;
+  width: 100%;
 }
 
 .inputBig{
