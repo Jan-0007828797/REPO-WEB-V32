@@ -398,8 +398,7 @@ export default function GamePage(){
               </div>
             </div>
 
-            {/* golden rule: keep button styling (classes) identical; only change layout */}
-            <div className="formRow stackConfirm">
+            <div className="formRow">
               <input className="inputBig" inputMode="numeric" placeholder="0" value={mlBid} onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))} />
               <button className="primaryBtn" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
             </div>
@@ -418,100 +417,23 @@ export default function GamePage(){
                 </div>
               </div>
             </div>
-            {(() => {
-              const year = Number(gs?.year || 1);
-              const isFarm = (m) => {
-                const t = String(m?.type || "").toLowerCase();
-                const n = String(m?.name || "").toLowerCase();
-                const id = String(m?.marketId || "").toLowerCase();
-                return t.includes("farm") || n.includes("farma") || id.startsWith("f");
-              };
-              const kindOf = (m) => {
-                const t = `${m?.type || ""} ${m?.name || ""}`.toLowerCase();
-                if (isFarm(m)) return "farm";
-                if (t.includes("průmys") || t.includes("prumys") || t.includes("industry")) return "industry";
-                if (t.includes("těž") || t.includes("tez") || t.includes("mining") || t.includes("těža") ) return "mining";
-                if (t.includes("země") || t.includes("zeme") || t.includes("agri") || t.includes("agriculture")) return "agri";
-                return "other";
-              };
-              const continentLabel = (c) => {
-                const x = String(c || "");
-                if (x === "N_AMERICA") return "Sev. Amerika";
-                if (x === "S_AMERICA") return "Již. Amerika";
-                if (x === "EUROPE") return "Evropa";
-                if (x === "AFRICA") return "Afrika";
-                if (x === "ASIA") return "Asie";
-                if (x === "OCEANIA") return "Austrálie";
-                return x;
-              };
-
-              const continentOrder = ["N_AMERICA", "S_AMERICA", "EUROPE", "AFRICA", "ASIA", "OCEANIA"];
-              const nonFarm = markets.filter((m) => !isFarm(m));
-              const farms = markets.filter((m) => isFarm(m));
-
-              const rows = continentOrder
-                .map((cont) => {
-                  const ms = nonFarm.filter((m) => m.continent === cont);
-                  if (!ms.length) return null;
-                  const sortKey = (m) => {
-                    const k = kindOf(m);
-                    return k === "industry" ? 0 : k === "mining" ? 1 : k === "agri" ? 2 : 9;
-                  };
-                  const picked = [...ms].sort((a, b) => sortKey(a) - sortKey(b)).slice(0, 2);
-                  return { cont, markets: picked };
-                })
-                .filter(Boolean);
-
-              const renderBtn = (m) => {
+            <div className="gridMarkets">
+              {markets.map(m=>{
                 const lockedBy = locks[m.marketId];
-                const locked = !!lockedBy && lockedBy !== playerId;
-                const mine = myMove?.marketId === m.marketId;
-                const cls = kindOf(m);
+                const locked = !!lockedBy && lockedBy!==playerId;
+                const mine = myMove?.marketId===m.marketId;
                 return (
-                  <button
-                    key={m.marketId}
-                    className={"marketCell " + cls + (locked ? " locked" : "") + (mine ? " mine" : "")}
-                    disabled={locked || !!myMove?.committed}
-                    onClick={() => pickMarket(m.marketId)}
-                    title={m.name || m.marketId}
-                  >
-                    <div className="marketCellTop">
-                      <span className="marketCellTitle">{m.name || m.marketId}</span>
-                      <span className="marketCellTag">{m.type}</span>
+                  <button key={m.marketId} className={"marketBtn"+(locked?" locked":"")+(mine?" mine":"")} disabled={locked || !!myMove?.committed} onClick={()=>pickMarket(m.marketId)}>
+                    <div className="marketTop">
+                      <span className="marketId">{m.marketId}</span>
+                      <span className="marketType">{m.type}</span>
                     </div>
-                    <div className="marketCellMeta">{m.marketId}</div>
+                    <div className="marketSub">{m.continent}</div>
                     {mine ? <div className="pill">MOJE</div> : locked ? <div className="pill dim">OBS.</div> : null}
                   </button>
                 );
-              };
-
-              return (
-                <div className="marketTable">
-                  {rows.map((r) => (
-                    <div key={r.cont} className="marketRow">
-                      <div className="marketRowLabel">{continentLabel(r.cont)}</div>
-                      <div className="marketRowCells">
-                        {r.markets.map(renderBtn)}
-                      </div>
-                    </div>
-                  ))}
-
-                  {year >= 2 ? (
-                    <div className="marketRow">
-                      <div className="marketRowLabel">Farma</div>
-                      <div className="marketRowCells farms">
-                        {[0, 1, 2].map((i) => {
-                          const m = farms[i];
-                          if (!m) return <div key={i} className="marketCell placeholder">Farma {i + 1}</div>;
-                          const mm = { ...m, name: `Farma ${i + 1}` };
-                          return renderBtn(mm);
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })()}
+              })}
+            </div>
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="AUCTION_ENVELOPE" ? (
           <div className="card phaseCard">
@@ -528,8 +450,7 @@ export default function GamePage(){
 
             {!aucEntry?.committed ? (
               <>
-                {/* golden rule: keep button styling (classes) identical; only change layout */}
-                <div className="formRow stackConfirm">
+                <div className="formRow">
                   <input className="inputBig" inputMode="numeric" placeholder="0" value={aucBid} onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))} />
                   <button className="primaryBtn" onClick={()=>commitAuction(aucBid===""?0:Number(aucBid), useLobby)}>Potvrdit</button>
                 </div>
@@ -539,7 +460,7 @@ export default function GamePage(){
                     <span>Použít lobbistu (pokud ho mám)</span>
                   </label>
                 </div>
-                <button className="ghostBtn" onClick={()=>commitAuction(null, false)}>Nechci dražit</button>
+                <button className="ghostBtn full" onClick={()=>commitAuction(null, false)}>Nechci dražit</button>
               </>
             ) : (
               <>
