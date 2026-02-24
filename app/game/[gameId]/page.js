@@ -399,7 +399,7 @@ export default function GamePage(){
             </div>
 
             {/* golden rule: keep button styling (classes) identical; only change layout */}
-            <div className="formCol">
+            <div className="formRow stackConfirm">
               <input className="inputBig" inputMode="numeric" placeholder="0" value={mlBid} onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))} />
               <button className="primaryBtn" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
             </div>
@@ -529,7 +529,7 @@ export default function GamePage(){
             {!aucEntry?.committed ? (
               <>
                 {/* golden rule: keep button styling (classes) identical; only change layout */}
-                <div className="formCol">
+                <div className="formRow stackConfirm">
                   <input className="inputBig" inputMode="numeric" placeholder="0" value={aucBid} onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))} />
                   <button className="primaryBtn" onClick={()=>commitAuction(aucBid===""?0:Number(aucBid), useLobby)}>Potvrdit</button>
                 </div>

@@ -315,6 +315,12 @@ button{ font-family:inherit; }
   /* Requested: half-width buttons/stack (keep top-right) */
   width: min(140px, calc(100vw - 24px));
 }
+.gmBar .primaryBtn,
+.gmBar .ghostBtn{
+  width: 50%;
+  align-self: flex-end;
+}
+
 
 /* Form column (input + primary + secondary stacked) */
 .formCol{
@@ -551,6 +557,19 @@ button{ font-family:inherit; }
   gap: 10px;
   margin-top: 12px;
 }
+/* golden rule: keep button styles identical; only reposition confirm under input */
+.formRow.stackConfirm{
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.formRow.stackConfirm .inputBig{
+  flex: 1 1 100%;
+}
+.formRow.stackConfirm .primaryBtn{
+  flex: 0 0 auto;
+  width: auto;
+}
+
 .inputBig{
   flex: 1 1 auto;
   padding: 16px 14px;
