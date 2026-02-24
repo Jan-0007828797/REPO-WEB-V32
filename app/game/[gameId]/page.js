@@ -398,10 +398,13 @@ export default function GamePage(){
               </div>
             </div>
 
+            {/* golden rule: keep button styling (classes) identical; only change layout */}
             <div className="formCol">
               <input className="inputBig" inputMode="numeric" placeholder="0" value={mlBid} onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))} />
-              <button className="primaryBtn full" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit nabídku</button>
-              <button className="ghostBtn full" onClick={()=>commitML(null)}>Nechci být ML</button>
+              <button className="primaryBtn" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit nabídku</button>
+            </div>
+            <div className="ctaRow">
+              <button className="ghostBtn" onClick={()=>commitML(null)}>Nechci být ML</button>
             </div>
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="MOVE" ? (
@@ -525,10 +528,10 @@ export default function GamePage(){
 
             {!aucEntry?.committed ? (
               <>
+                {/* golden rule: keep button styling (classes) identical; only change layout */}
                 <div className="formCol">
                   <input className="inputBig" inputMode="numeric" placeholder="0" value={aucBid} onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))} />
-                  <button className="primaryBtn full" onClick={()=>commitAuction(aucBid===""?0:Number(aucBid), useLobby)}>Potvrdit</button>
-                  <button className="ghostBtn full" onClick={()=>commitAuction(null, false)}>Nechci dražit</button>
+                  <button className="primaryBtn" onClick={()=>commitAuction(aucBid===""?0:Number(aucBid), useLobby)}>Potvrdit</button>
                 </div>
                 <div className="formRow">
                   <label className="checkRow">
@@ -536,6 +539,7 @@ export default function GamePage(){
                     <span>Použít lobbistu (pokud ho mám)</span>
                   </label>
                 </div>
+                <button className="ghostBtn" onClick={()=>commitAuction(null, false)}>Nechci dražit</button>
               </>
             ) : (
               <>
