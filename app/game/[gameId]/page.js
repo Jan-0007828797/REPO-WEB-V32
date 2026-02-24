@@ -401,7 +401,7 @@ export default function GamePage(){
             {/* golden rule: keep button styling (classes) identical; only change layout */}
             <div className="formCol">
               <input className="inputBig" inputMode="numeric" placeholder="0" value={mlBid} onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))} />
-              <button className="primaryBtn" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit nabídku</button>
+              <button className="primaryBtn" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
             </div>
             <div className="ctaRow">
               <button className="ghostBtn" onClick={()=>commitML(null)}>Nechci být ML</button>
