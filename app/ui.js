@@ -15,13 +15,26 @@ export function Modal({title,onClose,children,variant}){
     </div>
   );
 }
-export function BottomBar({onTab}){
+// Bottom bar is intentionally dumb: visual-only. Logic stays in pages (golden rule).
+export function BottomBar({onTab, active}){
   return (
     <div className="bottomBar">
-      <button className="tabBtn" onClick={()=>onTab("accounting")}>🧾<span>Účet</span></button>
-      <button className="tabBtn" onClick={()=>onTab("assets")}>🧱<span>Aktiva</span></button>
-      <button className="tabBtn" onClick={()=>onTab("experts")}>🧑‍🔧<span>Experti</span></button>
-      <button className="tabBtn" onClick={()=>onTab("trends")}>🗺️<span>Trendy</span></button>
+      <button className={"tabBtn"+(active==="accounting"?" active":"")} onClick={()=>onTab("accounting")} aria-label="Účetnictví">
+        <span className="tabIcon" aria-hidden="true">🧾</span>
+        <span className="tabLabel">Účet</span>
+      </button>
+      <button className={"tabBtn"+(active==="assets"?" active":"")} onClick={()=>onTab("assets")} aria-label="Aktiva">
+        <span className="tabIcon" aria-hidden="true">🏭</span>
+        <span className="tabLabel">Aktiva</span>
+      </button>
+      <button className={"tabBtn"+(active==="experts"?" active":"")} onClick={()=>onTab("experts")} aria-label="Experti">
+        <span className="tabIcon" aria-hidden="true">🧑‍💼</span>
+        <span className="tabLabel">Experti</span>
+      </button>
+      <button className={"tabBtn"+(active==="trends"?" active":"")} onClick={()=>onTab("trends")} aria-label="Trendy">
+        <span className="tabIcon" aria-hidden="true">🌐</span>
+        <span className="tabLabel">Trendy</span>
+      </button>
     </div>
   );
 }
