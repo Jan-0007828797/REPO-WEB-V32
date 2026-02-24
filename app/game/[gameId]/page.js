@@ -1141,7 +1141,7 @@ function AccountingPanel({ gs, playerId, gameId }){
   }
 
   return (
-    <div>
+    <div className="kpGame">
       <button className="ghostBtn full" onClick={openPreview}>Předběžný audit</button>
 
       <div className="secTitle" style={{marginTop:12}}>Tradiční investice</div>
