@@ -29,6 +29,15 @@
   --neoAmber:#fbbf24;
   --danger:#fb7185;
 
+  /* Traditional investments (Bible) */
+  --tiAgro:#4CAF50;
+  --tiMining:#8D6E63;
+  --tiIndustry:#42A5F5;
+
+  /* aliases used across legacy components */
+  --primary: var(--neoMint);
+  --accent: var(--neoCyan);
+
   /* effects */
   --shadow: 0 14px 40px rgba(0,0,0,.45);
   --shadowSoft: 0 10px 26px rgba(0,0,0,.28);
@@ -95,7 +104,7 @@ button{ font-family:inherit; }
   font-family: Orbitron, Inter, system-ui;
   letter-spacing: 3px;
   font-weight: 800;
-  font-size: 28px;
+  font-size: 42px; /* +50% */
   margin:0;
 }
 
@@ -217,7 +226,7 @@ button{ font-family:inherit; }
   position: sticky;
   top: 0;
   z-index: 5;
-  padding: 10px 10px 12px;
+  padding: 10px 10px 10px;
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(8,14,28,.92), rgba(8,14,28,.70));
   border:1px solid var(--stroke);
@@ -250,6 +259,46 @@ button{ font-family:inherit; }
 }
 .gmFab:active{ transform: translateY(1px); }
 
+/* GM must always be visible/clickable above any overlay (except GM modal) */
+.gmFabFixed{
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 20000;
+}
+.gmFab.gmRed{ background: rgba(244,63,94,.14); border-color: rgba(244,63,94,.45); }
+.gmFab.gmGreen{ background: rgba(34,197,94,.16); border-color: rgba(34,197,94,.50); }
+.gmFab .gmCount{ margin-left: 8px; font-variant-numeric: tabular-nums; opacity: .92; }
+
+/* Bottom bar wrapper: allow screens to disable interaction without changing visuals */
+.bottomBarWrap.disabled{ pointer-events:none; }
+.bottomBarWrap.disabled .bottomBar{ opacity: .55; }
+
+/* Locked confirmation modal (MOVE definitive choice) */
+.lockBackdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+  z-index: 6500;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
+.lockModal{
+  width: min(560px, 100%);
+  border-radius: 22px;
+  border:1px solid rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(20,25,40,.92), rgba(10,12,22,.88));
+  box-shadow: 0 18px 50px rgba(0,0,0,.50);
+  padding: 16px;
+}
+.lockTitle{ font-weight: 950; font-size: 18px; }
+.lockSub{ color: var(--muted); margin-top: 6px; }
+.lockBig{ margin-top: 14px; font-weight: 950; font-size: 26px; letter-spacing:.2px; }
+.lockTag{ display:inline-block; margin-top: 10px; padding: 8px 10px; border-radius: 999px; border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); font-weight: 900; }
+
 .yearPill{
   flex: 0 0 auto;
   padding: 8px 10px;
@@ -266,7 +315,7 @@ button{ font-family:inherit; }
   font-family: Orbitron, Inter, system-ui;
   letter-spacing: 3px;
   font-weight: 800;
-  font-size: 24px;
+  font-size: 36px; /* +50% */
   margin: 0;
 }
 
@@ -280,7 +329,7 @@ button{ font-family:inherit; }
 .stepRow{
   display:flex;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 6px;
   overflow-x:auto;
   padding-bottom: 4px;
 }
@@ -295,15 +344,22 @@ button{ font-family:inherit; }
   border:1px solid rgba(255,255,255,.12);
   background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
   color: var(--muted);
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, color 180ms ease;
 }
+
+.stepIcon{ display:flex; align-items:center; }
+.stepIcon svg{ width: 44px; height: 44px; } /* +30% */
+.stepText{ font-size: 12px; font-weight: 800; }
+
 .stepChip.active{
-  background: linear-gradient(90deg, rgba(52,211,153,.22), rgba(56,189,248,.18));
-  border-color: rgba(56,189,248,.38);
-  color: rgba(245,247,255,.98);
-  box-shadow: 0 0 0 4px rgba(56,189,248,.08), 0 0 22px rgba(56,189,248,.20);
+  /* Active phase must be unmistakable at a glance */
+  background: linear-gradient(180deg, rgba(66,165,245,.42), rgba(66,165,245,.18));
+  border-color: rgba(66,165,245,.78);
+  color: rgba(255,255,255,.98);
+  box-shadow: 0 0 0 4px rgba(66,165,245,.18), 0 0 26px rgba(66,165,245,.34);
+  transform: translateY(-1px);
 }
-.stepIcon{ font-size: 16px; }
-.stepText{ font-size: 13px; font-weight: 800; white-space:nowrap; }
+.stepText{ white-space:nowrap; }
 
 .content{
   margin-top: 12px;
@@ -393,6 +449,23 @@ button{ font-family:inherit; }
   min-height: 74px;
   transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
+
+.marketCellInner{
+  display:flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.marketGlyph{
+  flex: 0 0 48%;
+  border-radius: 14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+}
+.marketGlyph svg{ width: 56px; height: 56px; }
+.marketInfo{ flex: 1 1 auto; min-width: 0; }
 .marketCell:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
 .marketCell:active{ transform: translateY(0px) scale(.99); }
 .marketCell.placeholder{
@@ -415,10 +488,14 @@ button{ font-family:inherit; }
 .marketCellTag{ font-size: 11px; color: rgba(245,247,255,.70); }
 .marketCellMeta{ margin-top: 4px; font-size: 11px; color: rgba(245,247,255,.62); }
 
-/* Category colors (industry/mining/agri) */
-.marketCell.industry{ border-color: rgba(56,189,248,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(56,189,248,.08) inset; }
-.marketCell.mining{ border-color: rgba(245,158,11,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(245,158,11,.08) inset; }
-.marketCell.agri{ border-color: rgba(52,211,153,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(52,211,153,.08) inset; }
+/* Traditional investment colors (agri/mining/industry) – used on the board and across the app */
+.marketCell.industry{ border-color: rgba(66,165,245,.38); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(66,165,245,.10) inset; }
+.marketCell.mining{ border-color: rgba(141,110,99,.45); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(141,110,99,.12) inset; }
+.marketCell.agri{ border-color: rgba(76,175,80,.40); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(76,175,80,.10) inset; }
+
+.marketGlyph.industry{ background: linear-gradient(180deg, rgba(66,165,245,.28), rgba(66,165,245,.10)); }
+.marketGlyph.mining{ background: linear-gradient(180deg, rgba(141,110,99,.28), rgba(141,110,99,.10)); }
+.marketGlyph.agri{ background: linear-gradient(180deg, rgba(76,175,80,.26), rgba(76,175,80,.10)); }
 .marketCell.farm{ border-color: rgba(167,139,250,.22); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(167,139,250,.08) inset; }
 
 .marketCell.locked{ opacity: .55; filter: grayscale(.2); }
@@ -432,7 +509,8 @@ button{ font-family:inherit; }
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 35;
+  /* Must stay clickable even when modals are open */
+  z-index: 7000;
   display:flex;
   justify-content: space-around;
   gap: 6px;
@@ -502,7 +580,8 @@ button{ font-family:inherit; }
 .privacyBackdrop{
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  /* Keep bottom navigation always accessible */
+  z-index: 6500;
   background: rgba(6,9,18,.92);
   backdrop-filter: blur(10px);
   display:flex;
@@ -622,6 +701,7 @@ button{ font-family:inherit; }
 .primaryBtn{
   background: linear-gradient(90deg, var(--primary), var(--accent));
   color:#06101b;
+  box-shadow: 0 0 0 4px rgba(56,189,248,.10), 0 0 22px rgba(52,211,153,.22);
 }
 .primaryBtn.disabled{ opacity:.55; cursor:not-allowed; }
 .ghostBtn{
@@ -638,6 +718,14 @@ button{ font-family:inherit; }
 .ghostBtn:hover, .secondaryBtn:hover{ filter: brightness(1.08); }
 .primaryBtn.big, .ghostBtn.big, .secondaryBtn.big{ width: 100%; font-size: 18px; padding: 16px 14px; }
 .full{ width:100%; margin-top: 10px; }
+
+/* GM “next phase” must stand out from player confirms, but stay in the same GM top-right bar */
+.gmNextBtn{
+  background: linear-gradient(90deg, #FF3D00, #FFB300) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(255,61,0,.14), 0 0 26px rgba(255,61,0,.35) !important;
+}
+.gmNextBtn:hover{ filter: brightness(1.05); }
 .checkRow{ display:flex; align-items:center; gap:10px; color: var(--muted); font-weight: 700; }
 
 .toast{
@@ -953,12 +1041,11 @@ button{ font-family:inherit; }
 .phaseHeader{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .phaseLeft{ display:flex; align-items:center; gap:10px; }
 .phaseIcon{
-  width:44px; height:44px;
-  border-radius: 14px;
+  width:56px; height:56px;
+  border-radius: 18px;
   display:flex; align-items:center; justify-content:center;
   background: rgba(255,255,255,.08);
   border: 1px solid rgba(255,255,255,.12);
-  font-size: 20px;
 }
 .phaseTitle{ font-size: 18px; font-weight: 900; letter-spacing:.2px; }
 .phaseSub{ margin-top:6px; color: var(--muted); font-size: 14px; line-height:1.35; }
@@ -996,6 +1083,27 @@ button{ font-family:inherit; }
   font-size: 22px;
   flex: 0 0 auto;
 }
+
+/* Traditional investment badge (monochrome icon on colored field) */
+.tiBadge{
+  width: 44px; height: 44px;
+  border-radius: 16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.14);
+  color: rgba(255,255,255,.96);
+}
+.tiBadgeIcon{ width: 44px; height: 44px; }
+.tiBadge.agri{ background: linear-gradient(180deg, rgba(76,175,80,.50), rgba(76,175,80,.18)); }
+.tiBadge.mining{ background: linear-gradient(180deg, rgba(141,110,99,.55), rgba(141,110,99,.18)); }
+.tiBadge.industry{ background: linear-gradient(180deg, rgba(66,165,245,.55), rgba(66,165,245,.18)); }
+
+.listLine{ display:flex; align-items:center; gap: 10px; }
+.tiDot{ width: 10px; height: 10px; border-radius: 999px; display:inline-block; border:1px solid rgba(255,255,255,.18); }
+.tiDot.agri{ background: rgba(76,175,80,.85); }
+.tiDot.mining{ background: rgba(141,110,99,.88); }
+.tiDot.industry{ background: rgba(66,165,245,.90); }
 .tileMeta{ display:flex; flex-direction:column; gap: 3px; }
 .tileTitle{ font-weight: 950; }
 .tileSub{ color: var(--muted); font-size: 12px; line-height:1.25; }
@@ -1052,7 +1160,190 @@ button{ font-family:inherit; }
 .auditHeroTitle{ font-weight: 900; }
 .auditHeroHint{ color: var(--muted); margin-top: 6px; font-size: 13px; }
 
-/* Modal stacking helper: always on top */
+/* Modal stacking helper */
 .modalBackdrop.top{ z-index: 260; }
-.modalBackdrop.superTop{ z-index: 9999 !important; }
 .modalBackdrop{ z-index: 600; }
+.modalBackdrop.superTop{ z-index: 9999 !important; }
+
+/* GM modal must be above everything (including superTop + GM button) */
+.modalBackdrop.gmTop{ z-index: 26000 !important; }
+
+
+/* Lobby helpers (minimal, golden-rule safe) */
+.hint{
+  font-size: 12px;
+  color: var(--muted2);
+  line-height: 1.35;
+}
+.badge.muted{
+  background: rgba(245,247,255,.08);
+  border-color: rgba(245,247,255,.18);
+  color: rgba(245,247,255,.75);
+}
+.badge.ok{
+  background: rgba(52,211,153,.15);
+  border-color: rgba(52,211,153,.35);
+  color: rgba(228,255,245,.95);
+}
+
+/* === Global trend icons (colored, thematic) === */
+.gTrendIcon{ display:inline-block; }
+.gTrendIcon.pos{ color: rgba(76, 175, 80, 0.98); }
+.gTrendIcon.neg{ color: rgba(244, 67, 54, 0.98); }
+.gTrendIcon.neu{ color: rgba(66, 165, 245, 0.98); }
+
+.trendCard.tone-pos{ border-color: rgba(76,175,80,.38); }
+.trendCard.tone-neg{ border-color: rgba(244,67,54,.34); }
+.trendCard.tone-neu{ border-color: rgba(66,165,245,.34); }
+
+/* === Market selection: vivid tiles, same intensity as lock card === */
+.marketCell.industry{
+  background: linear-gradient(180deg, rgba(66,165,245,.42), rgba(66,165,245,.18));
+  border-color: rgba(66,165,245,.52);
+}
+.marketCell.mining{
+  background: linear-gradient(180deg, rgba(141,110,99,.48), rgba(141,110,99,.18));
+  border-color: rgba(141,110,99,.58);
+}
+.marketCell.agri{
+  background: linear-gradient(180deg, rgba(76,175,80,.40), rgba(76,175,80,.16));
+  border-color: rgba(76,175,80,.54);
+}
+
+.marketCellInner.vivid{ gap: 12px; align-items:center; }
+.marketSilWrap{
+  position: relative;
+  flex: 0 0 46%;
+  min-height: 82px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.12);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.continentSil{ opacity: .92; }
+.marketTypeSquare{
+  position:absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.18);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 14px 30px rgba(0,0,0,.35);
+  color: rgba(255,255,255,.96);
+}
+.marketTypeSquare.industry{ background: rgba(66,165,245,.78); }
+.marketTypeSquare.mining{ background: rgba(141,110,99,.82); }
+.marketTypeSquare.agri{ background: rgba(76,175,80,.78); }
+
+.marketCellTitleBig{ font-weight: 950; font-size: 14px; letter-spacing:.2px; }
+.marketCellSub{ margin-top: 6px; font-size: 12px; }
+
+/* === Lock (definitive selection) hero === */
+.lockHero{ margin-top: 14px; display:grid; gap: 12px; }
+.lockHeroTitle{ font-weight: 980; font-size: 24px; letter-spacing:.2px; }
+.lockHeroArt{
+  position: relative;
+  height: 170px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.16);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.lockTypeSquare{
+  position:absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 86px;
+  height: 86px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.18);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 18px 44px rgba(0,0,0,.45);
+  color: rgba(255,255,255,.96);
+}
+.lockTypeSquare.industry{ background: rgba(66,165,245,.86); }
+.lockTypeSquare.mining{ background: rgba(141,110,99,.88); }
+.lockTypeSquare.agri{ background: rgba(76,175,80,.86); }
+
+/* === SETTLE privacy: secret header === */
+.privacyFull.settleSecret{ padding-top: 12px; }
+.secretHeader{
+  width: 100%;
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(244,67,54,.55);
+  background: rgba(244,67,54,.18);
+  color: rgba(244,67,54,.98);
+  cursor: pointer;
+}
+.secretHeader:active{ transform: scale(.995); }
+.secretDoc{
+  width: 96px;
+  height: 74px;
+  border-radius: 16px;
+  background: rgba(244,67,54,.24);
+  border: 1px solid rgba(244,67,54,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(255,255,255,.96);
+}
+.secretText{ font-weight: 980; font-size: 18px; letter-spacing: .6px; }
+
+/* === Wallet UI (Accounting) === */
+.walletLine{
+  display:flex;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.walletLine:last-child{ border-bottom: none; }
+.walletLbl{ font-weight: 850; }
+.walletVal{ font-weight: 950; }
+.walletVal.pos{ color: var(--primary); }
+.walletVal.neg{ color: var(--danger); }
+.walletDivider{
+  height: 1px;
+  background: rgba(255,255,255,.10);
+  margin: 10px 0;
+}
+
+.kTable{
+  display:grid;
+  grid-template-columns: 88px 1fr 96px 1fr 1fr;
+  gap: 8px 10px;
+  align-items:center;
+  margin-top: 10px;
+}
+.kHead{
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(245,247,255,.66);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+.kRow{ display: contents; }
+.kCell{
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  font-size: 12px;
+  color: rgba(245,247,255,.92);
+}

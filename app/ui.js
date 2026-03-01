@@ -21,7 +21,7 @@ export function BottomBar({onTab, active}){
     <div className="bottomBar">
       <button className={"tabBtn"+(active==="accounting"?" active":"")} onClick={()=>onTab("accounting")} aria-label="Účetnictví / Finance">
         <span className="tabIcon tabChar" aria-hidden="true">$</span>
-        <span className="tabLabel">Finance</span>
+        <span className="tabLabel">Peněženka</span>
       </button>
 
       <button className={"tabBtn"+(active==="assets"?" active":"")} onClick={()=>onTab("assets")} aria-label="Karty">
@@ -49,5 +49,13 @@ export function BottomBar({onTab, active}){
         <span className="tabLabel">Trendy</span>
       </button>
     </div>
+  );
+}
+
+// Minimal helper: lets screens temporarily disable interaction with the bottom bar
+// (e.g., MOVE definitive confirmation modal). Visual stays the same.
+export function BottomBarWrapper({ disabled, children }){
+  return (
+    <div className={"bottomBarWrap"+(disabled?" disabled":"")}>{children}</div>
   );
 }
