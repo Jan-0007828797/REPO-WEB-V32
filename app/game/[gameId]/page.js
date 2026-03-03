@@ -46,6 +46,8 @@ function MonoIcon({ name, size=28, className="" }){
   // Monochrome, bold icons (not emoji) – consistent across the whole app.
   const s = Number(size)||28;
   const common = { viewBox:"0 0 64 64", width:s, height:s, fill:"none", stroke:"currentColor", strokeWidth:5, strokeLinecap:"round", strokeLinejoin:"round" };
+  // Investment type icons must be single-color and highly legible (filled shapes).
+  const commonFill = { viewBox:"0 0 64 64", width:s, height:s, fill:"currentColor", stroke:"none" };
   if(name==="crown"){
     return (
       <svg {...common} className={className} aria-hidden="true">
@@ -103,33 +105,38 @@ function MonoIcon({ name, size=28, className="" }){
   // Investment type marks (monochrome). Color is carried by the background/border.
   if(name==="agri"){
     return (
-      <svg {...common} className={className} aria-hidden="true">
-        <path d="M22 50V18" />
-        <path d="M32 50V14" />
-        <path d="M42 50V18" />
-        <path d="M22 26c6 0 10-4 10-10" />
-        <path d="M42 26c-6 0-10-4-10-10" />
-        <path d="M22 36c6 0 10-4 10-10" />
-        <path d="M42 36c-6 0-10-4-10-10" />
+      <svg {...commonFill} className={className} aria-hidden="true">
+        {/* Wheat (filled) */}
+        <path d="M31 10h2v44c0 1.1-.9 2-2 2s-2-.9-2-2V10z" />
+        {/* grains left */}
+        <path d="M29 16c-7 0-11 5-11 11 6 0 11-3 11-11z" />
+        <path d="M29 26c-7 0-11 5-11 11 6 0 11-3 11-11z" />
+        <path d="M29 36c-7 0-11 5-11 11 6 0 11-3 11-11z" />
+        {/* grains right */}
+        <path d="M35 16c7 0 11 5 11 11-6 0-11-3-11-11z" />
+        <path d="M35 26c7 0 11 5 11 11-6 0-11-3-11-11z" />
+        <path d="M35 36c7 0 11 5 11 11-6 0-11-3-11-11z" />
       </svg>
     );
   }
   if(name==="mining"){
     return (
-      <svg {...common} className={className} aria-hidden="true">
-        <path d="M14 44l14-14 8 8 14-14" />
-        <path d="M10 48h44" />
-        <path d="M26 22l6-6 6 6" />
+      <svg {...commonFill} className={className} aria-hidden="true">
+        {/* Pickaxe (filled) */}
+        <path d="M49 16c-8-8-20-8-28 0l-2 2 6 6 2-2c4-4 10-4 14 0l2 2 6-6-2-2z" />
+        <path d="M27 24l-5-5-8 8c-1.6 1.6-1.6 4.2 0 5.8l2.2 2.2 10.8-10.8z" />
+        <path d="M36 33L20 49c-1.6 1.6-1.6 4.2 0 5.8l.2.2c1.6 1.6 4.2 1.6 5.8 0l16-16-6-6z" />
       </svg>
     );
   }
   if(name==="industry"){
     return (
-      <svg {...common} className={className} aria-hidden="true">
-        <path d="M14 50V30l14 8V30l14 8V22l8 6v22H14z" />
-        <path d="M22 50V40" />
-        <path d="M30 50V40" />
-        <path d="M38 50V40" />
+      <svg {...commonFill} className={className} aria-hidden="true">
+        {/* Factory (filled) */}
+        <path d="M14 54c-2.2 0-4-1.8-4-4V30c0-1.5.8-2.9 2.1-3.6 1.3-.7 2.9-.6 4.1.1l11.8 6.8V30c0-1.5.8-2.9 2.1-3.6 1.3-.7 2.9-.6 4.1.1l11.8 6.8V22c0-1.5.8-2.9 2.1-3.6 1.3-.7 2.9-.6 4.1.1l6.8 4.0c1.2.7 1.9 2 1.9 3.4V50c0 2.2-1.8 4-4 4H14z" />
+        <path d="M20 54V40h6v14h-6z" />
+        <path d="M30 54V40h6v14h-6z" />
+        <path d="M40 54V40h6v14h-6z" />
       </svg>
     );
   }
@@ -906,7 +913,8 @@ export default function GamePage(){
 
                 // UX: When another player occupies a market, it becomes invisible to others (blank slot).
                 if(locked && !mine){
-                  return <div key={m.marketId} className={"marketCell hiddenSlot " + cls} aria-hidden="true" />;
+                  // Player requirement: inactive market disappears completely.
+                  return null;
                 }
                 return (
                   <button
