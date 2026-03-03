@@ -46,8 +46,6 @@ function MonoIcon({ name, size=28, className="" }){
   // Monochrome, bold icons (not emoji) – consistent across the whole app.
   const s = Number(size)||28;
   const common = { viewBox:"0 0 64 64", width:s, height:s, fill:"none", stroke:"currentColor", strokeWidth:5, strokeLinecap:"round", strokeLinejoin:"round" };
-  // Investment type icons must be single-color and highly legible (filled shapes).
-  const commonFill = { viewBox:"0 0 64 64", width:s, height:s, fill:"currentColor", stroke:"none" };
   if(name==="crown"){
     return (
       <svg {...common} className={className} aria-hidden="true">
@@ -92,6 +90,25 @@ function MonoIcon({ name, size=28, className="" }){
       </svg>
     );
   }
+  if(name==="eth"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M32 6l12 20-12 8-12-8 12-20z" />
+        <path d="M20 30l12 8 12-8" />
+        <path d="M32 38v20" />
+        <path d="M20 44l12 8 12-8" />
+      </svg>
+    );
+  }
+  if(name==="ltc"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M30 12h8" />
+        <path d="M30 12L22 44h18" />
+        <path d="M18 28h24" />
+      </svg>
+    );
+  }
   if(name==="receipt"){
     return (
       <svg {...common} className={className} aria-hidden="true">
@@ -105,38 +122,33 @@ function MonoIcon({ name, size=28, className="" }){
   // Investment type marks (monochrome). Color is carried by the background/border.
   if(name==="agri"){
     return (
-      <svg {...commonFill} className={className} aria-hidden="true">
-        {/* Wheat (filled) */}
-        <path d="M31 10h2v44c0 1.1-.9 2-2 2s-2-.9-2-2V10z" />
-        {/* grains left */}
-        <path d="M29 16c-7 0-11 5-11 11 6 0 11-3 11-11z" />
-        <path d="M29 26c-7 0-11 5-11 11 6 0 11-3 11-11z" />
-        <path d="M29 36c-7 0-11 5-11 11 6 0 11-3 11-11z" />
-        {/* grains right */}
-        <path d="M35 16c7 0 11 5 11 11-6 0-11-3-11-11z" />
-        <path d="M35 26c7 0 11 5 11 11-6 0-11-3-11-11z" />
-        <path d="M35 36c7 0 11 5 11 11-6 0-11-3-11-11z" />
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M22 50V18" />
+        <path d="M32 50V14" />
+        <path d="M42 50V18" />
+        <path d="M22 26c6 0 10-4 10-10" />
+        <path d="M42 26c-6 0-10-4-10-10" />
+        <path d="M22 36c6 0 10-4 10-10" />
+        <path d="M42 36c-6 0-10-4-10-10" />
       </svg>
     );
   }
   if(name==="mining"){
     return (
-      <svg {...commonFill} className={className} aria-hidden="true">
-        {/* Pickaxe (filled) */}
-        <path d="M49 16c-8-8-20-8-28 0l-2 2 6 6 2-2c4-4 10-4 14 0l2 2 6-6-2-2z" />
-        <path d="M27 24l-5-5-8 8c-1.6 1.6-1.6 4.2 0 5.8l2.2 2.2 10.8-10.8z" />
-        <path d="M36 33L20 49c-1.6 1.6-1.6 4.2 0 5.8l.2.2c1.6 1.6 4.2 1.6 5.8 0l16-16-6-6z" />
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M14 44l14-14 8 8 14-14" />
+        <path d="M10 48h44" />
+        <path d="M26 22l6-6 6 6" />
       </svg>
     );
   }
   if(name==="industry"){
     return (
-      <svg {...commonFill} className={className} aria-hidden="true">
-        {/* Factory (filled) */}
-        <path d="M14 54c-2.2 0-4-1.8-4-4V30c0-1.5.8-2.9 2.1-3.6 1.3-.7 2.9-.6 4.1.1l11.8 6.8V30c0-1.5.8-2.9 2.1-3.6 1.3-.7 2.9-.6 4.1.1l11.8 6.8V22c0-1.5.8-2.9 2.1-3.6 1.3-.7 2.9-.6 4.1.1l6.8 4.0c1.2.7 1.9 2 1.9 3.4V50c0 2.2-1.8 4-4 4H14z" />
-        <path d="M20 54V40h6v14h-6z" />
-        <path d="M30 54V40h6v14h-6z" />
-        <path d="M40 54V40h6v14h-6z" />
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M14 50V30l14 8V30l14 8V22l8 6v22H14z" />
+        <path d="M22 50V40" />
+        <path d="M30 50V40" />
+        <path d="M38 50V40" />
       </svg>
     );
   }
@@ -410,18 +422,7 @@ function PrivacyCard({ kind, mode, amountText, onReveal, onHide }){
 
         {mode==="hidden" ? (
           <>
-            {kind==="SETTLE" ? (
-              <div className="auditWaitBox" style={{marginTop:10}}>
-                <div className="auditDoc" style={{background:"#ff1b1b",borderRadius:18,padding:14,display:"inline-flex"}} aria-hidden="true">
-                  <MonoIcon name="receipt" size={90} />
-                </div>
-                <div style={{marginTop:10,fontWeight:900,color:"#ff1b1b",textAlign:"center"}}>
-                  Finální audit – čeká se na audit ostatních hráčů
-                </div>
-              </div>
-            ) : (
-              <div className="privacyHidden">🔒</div>
-            )}
+            <div className="privacyHidden">🔒</div>
             <button className="primaryBtn big full" onClick={onReveal}>ODKRÝT</button>
           </>
         ) : (
@@ -472,12 +473,12 @@ export default function GamePage(){
   const [cryptoD, setCryptoD] = useState({ BTC:0, ETH:0, LTC:0, SIA:0 });
 
   // Audit (SETTLE) UX state
-  const [auditPreview, setAuditPreview] = useState(null); // {settlementUsd, summary, details}
+  const [auditPreview, setAuditPreview] = useState(null); // {settlementUsd, breakdown}
   const [auditLoading, setAuditLoading] = useState(false);
-  const [auditDetailOpen, setAuditDetailOpen] = useState(false);
-  const [auditActionOpen, setAuditActionOpen] = useState(false);
-  const [auditActionMode, setAuditActionMode] = useState(null); // "SABOTEUR"|"THIEF"
-  const [auditTarget, setAuditTarget] = useState(null);
+  const [expertsOpen, setExpertsOpen] = useState(false);
+  const [expertPick, setExpertPick] = useState(null); // expert card
+  const [expertTarget, setExpertTarget] = useState(null); // playerId
+  const [expertCard, setExpertCard] = useState(null); // target investment cardId
 
   // Acquisition (scan) UI
   const [scanOn, setScanOn] = useState(false);
@@ -543,7 +544,7 @@ export default function GamePage(){
     s.emit("preview_audit", { gameId, playerId }, (res)=>{
       setAuditLoading(false);
       if(!res?.ok) setAuditPreview({ error: res?.error || "Chyba" });
-      else setAuditPreview({ settlementUsd: res.settlementUsd, summary: res.summary, details: res.details });
+      else setAuditPreview({ settlementUsd: res.settlementUsd, breakdown: res.breakdown||[] });
     });
   }, [gs?.phase, gameId, playerId]);
 
@@ -855,7 +856,6 @@ export default function GamePage(){
               </div>
             </div>
             {(() => {
-              const year = Number(gs?.year || 1);
               const isFarm = (m) => {
                 const t = String(m?.type || "").toLowerCase();
                 const n = String(m?.name || "").toLowerCase();
@@ -863,11 +863,11 @@ export default function GamePage(){
                 return t.includes("farm") || n.includes("farma") || id.startsWith("f");
               };
               const kindOf = (m) => {
-                const t = `${m?.type || ""} ${m?.name || ""}`.toLowerCase();
                 if (isFarm(m)) return "farm";
-                if (t.includes("průmys") || t.includes("prumys") || t.includes("industry")) return "industry";
-                if (t.includes("těž") || t.includes("tez") || t.includes("mining") || t.includes("těža") ) return "mining";
-                if (t.includes("země") || t.includes("zeme") || t.includes("agri") || t.includes("agriculture")) return "agri";
+                const t = String(m?.type || "").toUpperCase();
+                if (t === "INDUSTRY") return "industry";
+                if (t === "MINING") return "mining";
+                if (t === "AGRO") return "agri";
                 return "other";
               };
 
@@ -888,90 +888,95 @@ export default function GamePage(){
                 return x;
               };
 
-              const renderContLabel = (cont) => {
-                const lbl = continentLabel(cont);
-                const parts = lbl.split(" ");
-                if (parts.length >= 2) {
-                  return (
-                    <>
-                      {parts[0]}
-                      <br />
-                      {parts.slice(1).join(" ")}
-                    </>
-                  );
-                }
-                return lbl;
-              };
-
               const continentOrder = ["N_AMERICA", "S_AMERICA", "EUROPE", "AFRICA", "ASIA", "OCEANIA"];
               const nonFarm = markets.filter((m) => !isFarm(m));
               const farms = markets.filter((m) => isFarm(m));
 
-              // Bible rule: each continent offers exactly two distinct market types.
-              // Display order in row must be: Industry -> Mining -> Agriculture.
-              const allowedKindsByCont = {
-                N_AMERICA: ["industry", "mining"],
-                S_AMERICA: ["mining", "agri"],
-                EUROPE: ["industry", "agri"],
-                AFRICA: ["mining", "agri"],
-                ASIA: ["industry", "mining"],
-                OCEANIA: ["industry", "agri"],
-              };
+              // Pandemic restriction (global trend 15): show selectable markets only on current continent,
+              // and if another player is on that continent, the player must stay on the same market.
+              const y = String(gs?.year || 1);
+              const globals = (gs?.trends?.byYear?.[y]?.globals) || [];
+              const pandemicActive = globals.some(t=>t.key==="PANDEMIC_CONTINENT_LOCK");
+              const pandemicProtected = !!(gs?.lawyer?.protections?.[playerId]?.[y]?.["PANDEMIC_CONTINENT_LOCK"]);
+
+              const myCurrentMarketId = (gs?.players||[]).find(p=>p.playerId===playerId)?.marketId || null;
+              const myCurrent = (nonFarm.find(m=>m.marketId===myCurrentMarketId) || null);
+              const myCont = myCurrent?.continent || null;
+              const otherOnMyContinent = !!myCont && (gs?.players||[]).some(p=>{
+                if(p.playerId===playerId) return false;
+                const mid = p.marketId;
+                const mm = nonFarm.find(m=>m.marketId===mid);
+                return mm?.continent===myCont;
+              });
 
               const rows = continentOrder
                 .map((cont) => {
                   const ms = nonFarm.filter((m) => m.continent === cont);
                   if (!ms.length) return null;
+                  const sortKey = (m) => {
+                    const k = kindOf(m);
+                    return k === "industry" ? 0 : k === "mining" ? 1 : k === "agri" ? 2 : 9;
+                  };
+                  const picked = [...ms].sort((a, b) => sortKey(a) - sortKey(b)).slice(0, 2);
 
-                  const wanted = allowedKindsByCont[cont] || [];
-                  // pick first market for each wanted kind (distinct by design)
-                  const picked = wanted
-                    .map((k) => ms.find((m) => kindOf(m) === k))
-                    .filter(Boolean);
-
-                  // Fallback (should not happen): if kinds not detected, keep previous behavior but still enforce distinct kinds.
-                  if (!picked.length) {
-                    const byKind = new Map();
-                    for (const m of ms) {
-                      const k = kindOf(m);
-                      if (!byKind.has(k)) byKind.set(k, m);
+                  // Pandemic filtering (keep row, but remove selectable squares outside current continent).
+                  let filtered = picked;
+                  if(pandemicActive && !pandemicProtected){
+                    if(myCont && cont !== myCont) filtered = [];
+                    if(myCont && cont === myCont && otherOnMyContinent){
+                      // must stay on the same market
+                      filtered = picked.filter(m=>m.marketId===myCurrentMarketId);
                     }
-                    const order = ["industry", "mining", "agri"];
-                    order.forEach((k) => {
-                      if (byKind.has(k)) picked.push(byKind.get(k));
-                    });
-                    picked.splice(2);
                   }
-
-                  return { cont, markets: picked };
+                  return { cont, markets: filtered };
                 })
                 .filter(Boolean);
 
-              const renderBtn = (m) => {
+              const renderSquare = (m) => {
                 const lockedBy = locks[m.marketId];
                 const locked = !!lockedBy && lockedBy !== playerId;
-                const mine = myMove?.marketId === m.marketId;
-                const cls = kindOf(m);
+                if(locked) return null; // occupied markets are not visible
 
-                // UX: When another player occupies a market, it becomes invisible to others (blank slot).
-                if(locked && !mine){
-                  // Player requirement: inactive market disappears completely.
-                  return null;
-                }
+                const cls = kindOf(m);
+                const disabled = !!myMove?.committed;
+
                 return (
                   <button
                     key={m.marketId}
-                    className={"marketCell " + cls + (locked ? " locked" : "") + (mine ? " mine" : "")}
-                    disabled={locked || !!myMove?.committed}
+                    className={"marketSquare " + cls}
+                    disabled={disabled}
                     onClick={() => pickMarket(m.marketId)}
-                    title={m.name || m.marketId}
+                    aria-label={m.marketId}
+                    title={m.marketId}
                   >
-                    <div className="marketCellInner" style={{justifyContent:"center"}}>
-                      <div className={"marketGlyph " + cls} aria-hidden="true">
-                        <MonoIcon name={markFor(cls)} size={70} />
-                      </div>
+                    <MonoIcon name={markFor(cls)} size={40} />
+                  </button>
+                );
+              };
+
+              const renderFarmSquare = (m, i) => {
+                const lockedBy = locks[m.marketId];
+                const locked = !!lockedBy && lockedBy !== playerId;
+                if(locked) return null;
+
+                // Pandemic: farms are not selectable unless protected.
+                if(pandemicActive && !pandemicProtected) return null;
+
+                const icon = i===0 ? "btc" : i===1 ? "eth" : "ltc";
+                const disabled = !!myMove?.committed;
+                return (
+                  <button
+                    key={m.marketId}
+                    className={"marketSquare farm"}
+                    disabled={disabled}
+                    onClick={() => pickMarket(m.marketId)}
+                    aria-label={m.marketId}
+                    title={m.marketId}
+                  >
+                    <div className="farmInner" aria-hidden="true">
+                      <MonoIcon name={icon} size={32} />
+                      <div className="farmNum">{i+1}</div>
                     </div>
-                    {mine ? <div className="pill">MOJE</div> : locked ? <div className="pill dim">OBS.</div> : null}
                   </button>
                 );
               };
@@ -980,26 +985,22 @@ export default function GamePage(){
                 <div className="marketTable">
                   {rows.map((r) => (
                     <div key={r.cont} className="marketRow">
-                      <div className="marketRowLabel">{renderContLabel(r.cont)}</div>
+                      <div className="marketRowLabel">{continentLabel(r.cont).split(" ").map((w,idx)=>(<span key={idx}>{w}{idx===0 && continentLabel(r.cont).includes(" ") ? <br/>: null}{idx===0 && !continentLabel(r.cont).includes(" ") ? null : null}</span>))}</div>
                       <div className="marketRowCells">
-                        {r.markets.map(renderBtn)}
+                        {r.markets.map(renderSquare)}
                       </div>
                     </div>
                   ))}
 
-                  {year >= 2 ? (
-                    <div className="marketRow">
-                      <div className="marketRowLabel">Farma</div>
-                      <div className="marketRowCells farms">
-                        {[0, 1, 2].map((i) => {
-                          const m = farms[i];
-                          if (!m) return <div key={i} className="marketCell placeholder">Farma {i + 1}</div>;
-                          const mm = { ...m, name: `Farma ${i + 1}` };
-                          return renderBtn(mm);
-                        })}
-                      </div>
+                  <div className="marketRow">
+                    <div className="marketRowLabel">Mining<br/>farmy</div>
+                    <div className="marketRowCells farms">
+                      {[0,1,2].map((i)=>{
+                        const m = farms.find(x=>x.marketId===`FARM_${i+1}`) || { marketId:`FARM_${i+1}`, type:"FARM" };
+                        return renderFarmSquare(m, i);
+                      })}
                     </div>
-                  ) : null}
+                  </div>
                 </div>
               );
             })()}
@@ -1195,13 +1196,10 @@ export default function GamePage(){
               const committed = !!entry?.committed;
               const allCommitted = gs?.players?.every(p=>gs?.settle?.entries?.[p.playerId]?.committed);
               const view = committed ? entry : auditPreview;
+              const sum = view?.settlementUsd;
+              const breakdown = view?.breakdown || [];
               const inv = gs?.inventory?.[playerId] || { experts:[] };
-              const hasLobbyist = (inv.experts||[]).some(e=>e.functionKey==="STEAL_BASE_PROD" && !e.used);
-              const hasLawyer = (inv.experts||[]).some(e=>e.functionKey==="LAWYER_TRENDS" && !e.used);
-              const shieldOn = !!gs?.settle?.shields?.[playerId]?.active;
-
-              const sum = view?.summary?.totalUsd ?? view?.settlementUsd;
-              const summary = view?.summary || null;
+              const usable = (inv.experts||[]).filter(e=>!e.used && (e.functionKey==="STEAL_BASE_PROD" || e.functionKey==="LAWYER_TRENDS"));
 
               return (
                 <>
@@ -1216,36 +1214,14 @@ export default function GamePage(){
                           <div className="auditHint">Souhrn (USD)</div>
                           <div className={"auditSum "+((sum||0)>=0?"pos":"neg")}>{(sum||0)>=0?"+":""}{sum||0} USD</div>
                         </div>
-                        {summary ? (
-                          <div className="auditTable">
-                            {[
-                              { k:"investmentsUsd", label:"Investice (vč. bonusů)", cls:"pos" },
-                              { k:"electricityUsd", label:"Elektřina", cls:"neg" },
-                              { k:"trendsUsd", label:"Globální trendy", cls:"neu" },
-                              { k:"infraUsd", label:"Poplatek za infrastrukturu", cls:"neg" },
-                              { k:"totalUsd", label:"Součet", cls:"neu", strong:true },
-                            ].map((r)=>{
-                              const v = Number(summary?.[r.k]||0);
-                              const show = r.k==="totalUsd" || v!==0;
-                              if(!show) return null;
-                              return (
-                                <button
-                                  key={r.k}
-                                  className="auditRow clickable"
-                                  onClick={()=>setAuditDetailOpen(true)}
-                                  title="Klikni pro detail"
-                                >
-                                  <div className="auditLbl" style={{fontWeight:r.strong?900:700}}>{r.label}</div>
-                                  <div className={"auditVal "+(v>0?"pos":v<0?"neg":"neu")} style={{fontWeight:r.strong?900:800}}>
-                                    {v>=0?"+":""}{v} USD
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="muted">Souhrn není k dispozici.</div>
-                        )}
+                        <div className="auditTable">
+                          {breakdown.length ? breakdown.map((b,idx)=> (
+                            <div key={idx} className="auditRow">
+                              <div className="auditLbl">{b.label}</div>
+                              <div className={"auditVal "+(b.usd>0?"pos":b.usd<0?"neg":"neu")}>{b.usd>=0?"+":""}{b.usd} USD</div>
+                            </div>
+                          )) : <div className="muted">Rozpad není k dispozici.</div>}
+                        </div>
                       </>
                     )}
                   </div>
@@ -1253,13 +1229,9 @@ export default function GamePage(){
                   {!committed ? (
                     <div className="ctaRow">
                       <button className="primaryBtn big full" onClick={commitSettle}>Zahájit audit</button>
-                      <button
-                        className={"secondaryBtn big full"+(hasLobbyist?"":" disabled")}
-                        disabled={!hasLobbyist}
-                        onClick={()=>{ setAuditActionOpen(true); setAuditActionMode(null); setAuditTarget(null); }}
-                      >
-                        {hasLobbyist ? "Lobbista" : "Nemáš lobbistu"}
-                      </button>
+                      {usable.length ? (
+                        <button className="secondaryBtn big full" onClick={()=>setExpertsOpen(true)}>Povolat experty</button>
+                      ) : null}
                     </div>
                   ) : (
                     <>
@@ -1267,15 +1239,10 @@ export default function GamePage(){
                         <div className="muted" style={{marginTop:10}}>Čekám na ostatní hráče…</div>
                       ) : (
                         <div className="ctaRow">
-                          <button className={"secondaryBtn big full"+(hasLawyer||shieldOn?"":" disabled")} disabled={!hasLawyer && !shieldOn} onClick={()=>{
-                            if(shieldOn) return;
-                            s.emit("activate_audit_shield", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||"Chyba"); });
-                          }}>
-                            {shieldOn ? "Štít aktivní" : (hasLawyer ? "Aktivovat štít" : "Nemáš právníka")}
-                          </button>
-                          <button className="primaryBtn big full" onClick={()=>{ setSettlePrivacy("reveal"); setAuditDetailOpen(true); }}>
-                            Finální audit – detailní vyúčtování
-                          </button>
+                          {usable.length ? (
+                            <button className="secondaryBtn big full" onClick={()=>setExpertsOpen(true)}>Povolat experty</button>
+                          ) : null}
+                          <button className="primaryBtn big full" onClick={()=>{ setSettlePrivacy("reveal"); }}>Potvrdit audit (ukázat)</button>
                         </div>
                       )}
                     </>
@@ -1409,26 +1376,35 @@ export default function GamePage(){
         };
         const kindOf = ()=>{
           const t = `${m?.type || ""} ${m?.name || ""}`.toLowerCase();
-          if(t.includes("průmys") || t.includes("prumys") || t.includes("industry")) return "industry";
-          if(t.includes("těž") || t.includes("tez") || t.includes("mining") || t.includes("těža")) return "mining";
-          if(t.includes("země") || t.includes("zeme") || t.includes("agri") || t.includes("agriculture")) return "agri";
+          if(t.includes("industry") || t.includes("průmys") || t.includes("prumys")) return "industry";
+          if(t.includes("mining") || t.includes("těž") || t.includes("tez") || t.includes("těža")) return "mining";
+          if(t.includes("agri") || t.includes("agriculture") || t.includes("agro") || t.includes("země") || t.includes("zeme")) return "agri";
           return "industry";
         };
         const typeLabel = (k)=> k==="industry" ? "Průmysl" : k==="mining" ? "Těžba" : "Zemědělství";
         const k = kindOf();
+        const isFarm = String(m?.type||"").toUpperCase()==="FARM" || String(m?.marketId||"").startsWith("FARM_");
+        const farmNum = isFarm ? String(m?.marketId||"").split("_")[1] : null;
         return (
           <div className="lockBackdrop" aria-label="Definitivní výběr trhu">
             <div className="lockModal">
               <div className="lockTitle">Definitivní výběr trhu</div>
               <div className="lockSub">Ukaž tento displej ostatním hráčům. Okno se zavře až při posunu do další fáze.</div>
-              <div className="lockChoice">{`${contLabel(m?.continent)} – ${typeLabel(k)}`}</div>
+              <div className="lockChoice">{isFarm ? `Mining farma ${farmNum||""}` : `${contLabel(m?.continent)} – ${typeLabel(k)}`}</div>
 
               <div className="lockArt" aria-hidden="true">
                 <div className="lockContinent">
                   <MonoIcon name={contIcon(m?.continent)} size={168} className="lockContinentSvg" />
                 </div>
-                <div className={"lockBadgeSquare "+k}>
-                  <MonoIcon name={k} size={64} />
+                <div className={"lockBadgeSquare "+(isFarm?"farm":k)}>
+                  {isFarm ? (
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      <MonoIcon name={farmNum==="2"?"eth":farmNum==="3"?"ltc":"btc"} size={56} />
+                      <div style={{fontWeight:900,fontSize:56,lineHeight:1}}>{farmNum}</div>
+                    </div>
+                  ) : (
+                    <MonoIcon name={k} size={64} />
+                  )}
                 </div>
               </div>
             </div>
@@ -1490,88 +1466,101 @@ export default function GamePage(){
         </Modal>
       ) : null}
 
-      {auditDetailOpen && gs?.phase==="SETTLE" ? (
-        <SuperTopModal title="Detailní vyúčtování" onClose={()=>setAuditDetailOpen(false)}>
-          {(() => {
-            const entry = gs?.settle?.entries?.[playerId];
-            const committed = !!entry?.committed;
-            const view = committed ? entry : auditPreview;
-            const details = view?.details;
-            const summary = view?.summary;
-            if(!details || !summary) return <div className="muted">Detail není k dispozici.</div>;
-            return <SettlementDetail details={details} summary={summary} />;
-          })()}
-        </SuperTopModal>
-      ) : null}
-
-      {auditActionOpen && gs?.phase==="SETTLE" ? (
-        <SuperTopModal title="Lobbista v auditu" onClose={()=>{ setAuditActionOpen(false); setAuditActionMode(null); setAuditTarget(null); }}>
+      {expertsOpen && gs?.phase==="SETTLE" ? (
+        <SuperTopModal title="Povolat experty" onClose={()=>{ setExpertsOpen(false); setExpertPick(null); setExpertTarget(null); setExpertCard(null); }}>
           {(() => {
             const inv = gs?.inventory?.[playerId] || { experts:[] };
-            const hasLobbyist = (inv.experts||[]).some(e=>e.functionKey==="STEAL_BASE_PROD" && !e.used);
-            const committed = !!gs?.settle?.entries?.[playerId]?.committed;
-            const others = (gs?.players||[]).filter(p=>p.playerId!==playerId);
-            if(committed) return <div className="muted">Audit už je zahájený – lobbistu už nelze použít.</div>;
-            if(!hasLobbyist) return <div className="muted">Nemáš lobbistu.</div>;
+            const usable = (inv.experts||[]).filter(e=>!e.used && (e.functionKey==="STEAL_BASE_PROD" || e.functionKey==="LAWYER_TRENDS"));
+            const others = (gs?.players||[]).filter(p=>p.playerId!==playerId && p.role!=="GM");
 
-            function useNow(){
-              if(!auditActionMode || !auditTarget) return;
-              s.emit("use_lobbyist_audit", { gameId, playerId, mode: auditActionMode, targetPlayerId: auditTarget }, (res)=>{
-                if(!res?.ok) return setErr(res?.error||"Chyba");
-                setAuditActionOpen(false);
-                setAuditActionMode(null);
-                setAuditTarget(null);
+            function applySteal(){
+              const effect = { type:"STEAL_BASE_PRODUCTION", targetPlayerId: expertTarget, cardId: expertCard };
+              s.emit("apply_expert_effect", { gameId, playerId, effect }, (res)=>{
+                if(!res?.ok) alert(res?.error || "Chyba");
+                else {
+                  setExpertsOpen(false);
+                  setExpertPick(null); setExpertTarget(null); setExpertCard(null);
+                }
               });
             }
 
+            const step = !expertPick ? 1 : (expertPick.functionKey==="STEAL_BASE_PROD" ? (!expertTarget ? 2 : !expertCard ? 3 : 4) : 9);
+
             return (
-              <div>
-                {!auditActionMode ? (
+              <div className="expertModal">
+                {!usable.length ? (
+                  <div className="muted">Nemáš žádného použitelného experta.</div>
+                ) : null}
+
+                {!expertPick ? (
                   <div className="cardsGrid" style={{marginTop:6}}>
-                    <button className="expertPickTile" onClick={()=>setAuditActionMode("SABOTEUR")}>
-                      <div className="tileIcon">💥</div>
-                      <div className="tileMeta">
-                        <div className="tileTitle">Sabotér</div>
-                        <div className="tileSub">Sníží protihráči zisk z investic o 50 %.</div>
-                      </div>
-                    </button>
-                    <button className="expertPickTile" onClick={()=>setAuditActionMode("THIEF")}>
-                      <div className="tileIcon">🕵️</div>
-                      <div className="tileMeta">
-                        <div className="tileTitle">Zloděj</div>
-                        <div className="tileSub">Ukradne protihráči nejlepší základní produkci (bez bonusů).</div>
-                      </div>
-                    </button>
+                    {usable.map(e=>{
+                      const icon = e.functionKey==="STEAL_BASE_PROD" ? "🕴️" : "⚖️";
+                      return (
+                        <button key={e.cardId} className="expertPickTile" onClick={()=>setExpertPick(e)}>
+                          <div className="tileIcon">{icon}</div>
+                          <div className="tileMeta">
+                            <div className="tileTitle">{e.functionLabel}</div>
+                            <div className="tileSub">{e.functionDesc}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : !auditTarget ? (
-                  <div className="list" style={{marginTop:10}}>
-                    {others.map(p=>(
-                      <button key={p.playerId} className="listItem clickable" onClick={()=>setAuditTarget(p.playerId)}>
-                        <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
-                          <div><b>{p.name||"Hráč"}</b></div>
-                          <div className="pill">vybrat</div>
-                        </div>
-                      </button>
-                    ))}
-                    <button className="secondaryBtn big full" onClick={()=>{ setAuditActionMode(null); }}>Zpět</button>
+                ) : expertPick.functionKey==="LAWYER_TRENDS" ? (
+                  <div className="cardInner">
+                    <div className="secTitle">Právník</div>
+                    <div className="muted" style={{marginTop:6}}>
+                      Právníka v této verzi používáš v detailu trendu (ochrana proti trendům). V auditu se jen připomíná, že ho máš k dispozici.
+                    </div>
+                    <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); }}>Zpět</button>
                   </div>
                 ) : (
-                  <div className="ctaRow" style={{marginTop:12}}>
-                    <button className="primaryBtn big full" onClick={useNow}>Použít</button>
-                    <button className="secondaryBtn big full" onClick={()=>{ setAuditTarget(null); }}>Změnit hráče</button>
-                  </div>
+                  <>
+                    <div className="secTitle">{expertPick.functionLabel}</div>
+                    <div className="muted" style={{marginTop:6}}>Vyber hráče a jeho investici. Efekt se započítá do finálního auditu.</div>
+
+                    {!expertTarget ? (
+                      <div className="list" style={{marginTop:10}}>
+                        {others.length ? others.map(p=>(
+                          <button key={p.playerId} className="listItem clickable" onClick={()=>setExpertTarget(p.playerId)}>
+                            <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
+                              <div><b>{p.name||"Hráč"}</b></div>
+                              <div className="pill">vybrat</div>
+                            </div>
+                          </button>
+                        )) : <div className="muted">Žádní další hráči.</div>}
+                      </div>
+                    ) : !expertCard ? (
+                      <div className="list" style={{marginTop:10}}>
+                        {(gs?.inventory?.[expertTarget]?.investments||[]).map(c=>(
+                          <button key={c.cardId} className="listItem clickable" onClick={()=>setExpertCard(c.cardId)}>
+                            <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
+                              <div><b>{c.cardId}</b> • {c.name}</div>
+                              <div className="pill">+{c.usdProduction} USD</div>
+                            </div>
+                            <div className="muted">{c.continent} • {c.type}</div>
+                          </button>
+                        ))}
+                        <button className="secondaryBtn big full" onClick={()=>{ setExpertTarget(null); }}>Změnit hráče</button>
+                      </div>
+                    ) : (
+                      <div className="ctaRow" style={{marginTop:12}}>
+                        <button className="primaryBtn big full" onClick={applySteal}>ANO – aplikovat</button>
+                        <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); setExpertTarget(null); setExpertCard(null); }}>NE – zrušit</button>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                <div className="muted" style={{marginTop:10}}>
-                  Lobbista jde použít jen jednou za rok (buď v Dražbě, nebo v Auditu).
-                </div>
+                {expertPick ? (
+                  <div className="muted" style={{marginTop:10}}>Krok {step}/4</div>
+                ) : null}
               </div>
             );
           })()}
         </SuperTopModal>
       ) : null}
-
-      
 
       {tab==="status" ? (
         <Modal title="Stav hry" onClose={()=>setTab(null)}>
@@ -1661,113 +1650,6 @@ export default function GamePage(){
           <div className="modalText" style={{marginTop:6}}>{regionalModal.desc || "Detail není k dispozici."}</div>
         </SuperTopModal>
       ) : null}
-    </div>
-  );
-}
-
-function SettlementDetail({ details, summary }){
-  const fmt = (n)=>{
-    const v = Math.floor(Number(n||0));
-    if(!Number.isFinite(v)) return "0";
-    return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  };
-  const line = (label, v)=> (
-    <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <div>{label}</div>
-      <div style={{fontWeight:900}} className={v>0?"pos":v<0?"neg":"neu"}>{v>=0?"+":""}{fmt(v)} USD</div>
-    </div>
-  );
-
-  return (
-    <div>
-      <div className="bigNumber">{(summary?.totalUsd||0)>=0?"+":""}{fmt(summary?.totalUsd||0)} USD</div>
-
-      <details open style={{marginTop:10}}>
-        <summary style={{fontWeight:900}}>Tradiční investice (vč. bonusů)</summary>
-        <div className="list" style={{marginTop:8}}>
-          {line("Základ", details?.investments?.baseUsd||0)}
-          {line("Regionální bonus", details?.investments?.regionalBonusUsd||0)}
-          {line("Globální bonus", details?.investments?.globalBonusUsd||0)}
-          {line("Součet investic", details?.investments?.grossUsd||0)}
-        </div>
-        <div className="muted" style={{marginTop:8}}>Klikni na kartu v sekci „Karty“ pro detaily. (V auditu se zde zobrazí i vlivy aktivovaných expertů.)</div>
-      </details>
-
-      <details style={{marginTop:12}}>
-        <summary style={{fontWeight:900}}>Elektřina</summary>
-        <div className="list" style={{marginTop:8}}>
-          {line("Elektřina celkem", details?.electricity?.usd||0)}
-          {(details?.electricity?.farms||[]).length ? (
-            <div className="muted" style={{marginTop:6}}>Farem: {(details?.electricity?.farms||[]).length}</div>
-          ) : (
-            <div className="muted" style={{marginTop:6}}>Nemáš mining farmu</div>
-          )}
-        </div>
-      </details>
-
-      <details style={{marginTop:12}}>
-        <summary style={{fontWeight:900}}>Globální trendy</summary>
-        <div className="list" style={{marginTop:8}}>
-          {line("Vliv trendů", details?.trends?.usd||0)}
-          {(details?.trends?.items||[]).length ? (
-            <div className="muted" style={{marginTop:6}}>Detail: {(details?.trends?.items||[]).map(i=>`${i.key}: ${i.usd>=0?"+":""}${fmt(i.usd)} USD`).join(" • ")}</div>
-          ) : (
-            <div className="muted" style={{marginTop:6}}>Žádný trendový dopad.</div>
-          )}
-        </div>
-      </details>
-
-      <details style={{marginTop:12}}>
-        <summary style={{fontWeight:900}}>Lobbisté</summary>
-        <div className="list" style={{marginTop:8}}>
-          {line("Vliv lobbistů", details?.lobbyists?.usd||0)}
-          {(details?.lobbyists?.items||[]).length ? (
-            <div className="muted" style={{marginTop:6}}>Detail: {(details?.lobbyists?.items||[]).map(i=>`${i.mode}: ${i.usd>=0?"+":""}${fmt(i.usd)} USD`).join(" • ")}</div>
-          ) : (
-            <div className="muted" style={{marginTop:6}}>Žádný lobbista.</div>
-          )}
-        </div>
-      </details>
-
-      <details style={{marginTop:12}}>
-        <summary style={{fontWeight:900}}>Právníci</summary>
-        <div className="list" style={{marginTop:8}}>
-          {line("Vliv právníků", details?.lawyers?.usd||0)}
-          <div className="muted" style={{marginTop:6}}>{details?.lawyers?.shieldActive ? "Štít: aktivní" : "Štít: neaktivní"}</div>
-        </div>
-      </details>
-
-      <details style={{marginTop:12}}>
-        <summary style={{fontWeight:900}}>Poplatek za infrastrukturu</summary>
-        <div className="list" style={{marginTop:8}}>
-          {line("Poplatek", details?.infrastructure?.usd||0)}
-          <div className="muted" style={{marginTop:6}}>
-            Kontinent: {details?.infrastructure?.continent || "?"} • Cizí investice: {details?.infrastructure?.foreignInvestments || 0} • Základní cena/ks: {fmt(details?.infrastructure?.basePrice||0)} USD
-          </div>
-        </div>
-      </details>
-
-      <details style={{marginTop:12}}>
-        <summary style={{fontWeight:900}}>Krypto produkce (z farem)</summary>
-        <div className="list" style={{marginTop:8}}>
-          {details?.crypto?.hasFarms ? (
-            <>
-              {(["BTC","ETH","LTC","SIA"]).map(sym=>{
-                const ks = Number(details?.crypto?.production?.[sym]||0);
-                const usd = Number(details?.crypto?.productionUsd?.[sym]||0);
-                return (
-                  <div key={sym} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div>{sym}: {ks} ks</div>
-                    <div style={{fontWeight:900}}>{usd>=0?"+":""}{fmt(usd)} USD</div>
-                  </div>
-                );
-              })}
-            </>
-          ) : (
-            <div className="muted">Nemáš mining farmy</div>
-          )}
-        </div>
-      </details>
     </div>
   );
 }
@@ -2232,97 +2114,97 @@ function ExpertsPanel({ inv }){
 }
 
 function AccountingPanel({ gs, playerId, gameId }){
-  const s = useMemo(()=> getSocket(), []);
-  const [data, setData] = useState(null); // {summary, details}
-  const [loading, setLoading] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const inv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
+  const baseUsd = (inv.investments||[]).reduce((s,c)=>s + Number(c.usdProduction||0), 0);
+  // (v3 test) region/global bonus rules are not fully encoded; show nominal placeholders.
+  const regionalBonusUsd = 0;
+  const globalBonusUsd = 0;
 
-  useEffect(()=>{
-    if(!gs?.gameId) return;
+  const electricityUsd = (inv.miningFarms||[]).reduce((s,c)=>s + Number(c.electricityUSD||0), 0);
+  const cryptoProd = { BTC:0, ETH:0, LTC:0, SIA:0 };
+  for(const mf of (inv.miningFarms||[])){
+    const sym = mf.crypto;
+    if(sym && cryptoProd[sym]!=null) cryptoProd[sym] += Number(mf.cryptoProduction||0);
+  }
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  function openPreview(){
+    setPreviewOpen(true);
     setLoading(true);
+
     s.emit("preview_audit", { gameId, playerId }, (res)=>{
       setLoading(false);
-      if(!res?.ok) setData({ error: res?.error || "Chyba" });
-      else setData({ summary: res.summary, details: res.details });
+      if(!res?.ok){
+        setPreview({ error: res?.error || "Chyba" });
+      }else{
+        setPreview({ settlementUsd: res.settlementUsd, breakdown: res.breakdown||[] });
+      }
     });
-  }, [gs?.phase, gs?.year, gameId, playerId]);
-
-  const summary = data?.summary;
-  const details = data?.details;
-
-  const row = (label, v, opts)=>{
-    const val = Number(v||0);
-    const clickable = !!opts?.clickable;
-    return (
-      <button
-        key={label}
-        className={"listItem"+(clickable?" clickable":"")}
-        style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}
-        onClick={()=>{ if(clickable) setDetailOpen(true); }}
-        disabled={!clickable}
-      >
-        <div>{label}</div>
-        <div style={{fontWeight:900}} className={val>0?"pos":val<0?"neg":"neu"}>
-          {val>=0?"+":""}{val} USD
-        </div>
-      </button>
-    );
-  };
+  }
 
   return (
     <div>
-      {loading ? <div className="muted">Načítám…</div> : null}
-      {data?.error ? <div className="muted">{data.error}</div> : null}
+      <button className="ghostBtn full" onClick={openPreview}>Předběžný audit</button>
 
-      {summary ? (
-        <>
-          <div className="secTitle">USD</div>
-          <div className="list">
-            {row("Investice", summary.investmentsUsd, { clickable:true })}
-            {details?.crypto?.hasFarms ? row("Elektřina", summary.electricityUsd, { clickable:true }) : (
-              <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>Elektřina</div>
-                <div className="muted">Nemáš mining farmu</div>
-              </div>
-            )}
-            {row("Globální trendy", summary.trendsUsd, { clickable:true })}
-            {row("Poplatek za infrastrukturu", summary.infraUsd, { clickable:true })}
-            {row("Součet", summary.totalUsd, { clickable:true })}
-          </div>
+      <div className="secTitle" style={{marginTop:12}}>Tradiční investice</div>
+      <div className="list">
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Základní produkce</div>
+          <div style={{fontWeight:900,color:"var(--primary)"}}>+{baseUsd} USD</div>
+        </div>
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Regionální bonus</div>
+          <div style={{fontWeight:900,color:"var(--primary)"}}>+{regionalBonusUsd} USD</div>
+        </div>
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Globální bonus</div>
+          <div style={{fontWeight:900,color:"var(--primary)"}}>+{globalBonusUsd} USD</div>
+        </div>
+      </div>
 
-          <div className="secTitle" style={{marginTop:16}}>Krypto</div>
-          {details?.crypto?.hasFarms ? null : <div className="muted">Nemáš mining farmy</div>}
-
-          <div className="miniTable" style={{marginTop:10}}>
-            <div className="miniHead">
-              <div>Krypto</div>
-              <div>USD</div>
-              <div>Máš</div>
-              <div>Aktuální kurz</div>
-              <div>Těžíš</div>
+      <div className="secTitle" style={{marginTop:16}}>Mining farmy</div>
+      <div className="list">
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Elektřina</div>
+          <div style={{fontWeight:900,color:"var(--danger)"}}>−{electricityUsd} USD</div>
+        </div>
+        {(["BTC","ETH","LTC","SIA"]).map(sym=>{
+          const v = cryptoProd[sym] || 0;
+          return (
+            <div key={sym} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>{sym} produkce / rok</div>
+              <div style={{fontWeight:900,color:"var(--primary)"}}>+{v} ks</div>
             </div>
-            {["BTC","ETH","LTC","SIA"].map(sym=>{
-              const owned = Number(details?.crypto?.wallet?.[sym]||0);
-              const rate = Number(details?.crypto?.rates?.[sym]||0);
-              const ownedUsd = owned * rate;
-              const prodUsd = Number(details?.crypto?.productionUsd?.[sym]||0);
-              return (
-                <div key={sym} className="miniRow">
-                  <div style={{fontWeight:900}}>{sym}</div>
-                  <div>{ownedUsd>=0?"+":""}{ownedUsd} USD</div>
-                  <div>{owned}</div>
-                  <div>{rate}</div>
-                  <div>{details?.crypto?.hasFarms ? (prodUsd>0?`+${prodUsd} USD`:"0 USD") : "NE"}</div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      ) : null}
+          );
+        })}
+      </div>
 
-      {detailOpen ? (
-        <SuperTopModal title="Detail" onClose={()=>setDetailOpen(false)}>
-          {details && summary ? <SettlementDetail details={details} summary={summary} /> : <div className="muted">Detail není k dispozici.</div>}
+      {previewOpen ? (
+        <SuperTopModal title="Předběžný audit" onClose={()=>setPreviewOpen(false)}>
+          {loading ? (
+            <div className="muted">Počítám…</div>
+          ) : preview?.error ? (
+            <div className="muted">{preview.error}</div>
+          ) : (
+            <>
+              <div className="bigNumber">{(preview?.settlementUsd||0)>=0?"+":""}{preview?.settlementUsd||0} USD</div>
+              <div className="secTitle">Rozpad</div>
+              <div className="list">
+                {(preview?.breakdown||[]).map((b, idx)=>(
+                  <div key={idx} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>{b.label}</div>
+                    <div style={{fontWeight:900}}>{b.usd>=0?"+":""}{b.usd} USD</div>
+                  </div>
+                ))}
+              </div>
+              <div className="muted" style={{marginTop:10}}>
+                Pozn.: Předběžný audit je simulace pro test (nezavírá rok).
+              </div>
+            </>
+          )}
         </SuperTopModal>
       ) : null}
     </div>
