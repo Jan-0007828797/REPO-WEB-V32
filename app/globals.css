@@ -416,7 +416,7 @@ button{ font-family:inherit; }
 }
 .marketRowLabel{
   /* Compact continent label so both market squares fit on one row even on mobile. */
-  flex: 0 0 78px;
+  flex: 0 0 96px; /* fixed width per UX spec */
   display:flex;
   align-items:center;
   justify-content:center;
@@ -432,17 +432,16 @@ button{ font-family:inherit; }
   line-height: 1.05;
 }
 .marketRowCells{
-  flex: 1 1 auto;
-  /* Two fixed square tiles per continent row (when both are available). */
+  /* Keep tiles immediately next to the continent label (no wasted horizontal space). */
+  flex: 0 0 auto;
   --tile: 92px;
-  display:grid;
-  grid-auto-flow: column;
-  grid-template-columns: repeat(2, var(--tile));
-  justify-content:flex-end;
+  display:flex;
+  flex-direction: row;
+  align-items: stretch;
   gap: 10px;
 }
 .marketRowCells.farms{
-  grid-template-columns: repeat(3, var(--tile));
+  /* Farms row can contain 3 tiles */
 }
 
 .marketCell{
@@ -511,7 +510,7 @@ button{ font-family:inherit; }
 /* Responsive: keep everything on ONE row; just shrink tiles and icon. */
 @media (max-width: 560px){
   .marketRow{ gap: 8px; }
-  .marketRowLabel{ flex-basis: 70px; padding: 8px 10px; }
+  .marketRowLabel{ flex-basis: 86px; padding: 8px 10px; }
   .marketRowCells{ --tile: 78px; gap: 8px; }
   .marketCell{ padding: 10px; border-radius: 14px; }
   .marketGlyph svg{ width: 44px; height: 44px; }
