@@ -8,6 +8,12 @@ import { loadPlayerId } from "../../../lib/storage";
 import { playClock, stopClock, playRing, stopRing } from "../../../lib/audio";
 import { BottomBar, BottomBarWrapper, Modal } from "../../ui";
 
+// Helper: get current player object from public game state
+// (server uses `playerId` as the stable identifier)
+function getMe(gs, playerId){
+  return (gs?.players || []).find(p => p.playerId === playerId) || null;
+}
+
 function SuperTopModal({ title, onClose, children }){
   // Same behavior/markup as Modal, but guaranteed above other modals.
   useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
