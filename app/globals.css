@@ -489,9 +489,9 @@ button{ font-family:inherit; }
 .marketCellMeta{ margin-top: 4px; font-size: 11px; color: rgba(245,247,255,.62); }
 
 /* Traditional investment colors (agri/mining/industry) – used on the board and across the app */
-.marketCell.industry{ border-color: rgba(66,165,245,.38); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(66,165,245,.10) inset; }
-.marketCell.mining{ border-color: rgba(141,110,99,.45); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(141,110,99,.12) inset; }
-.marketCell.agri{ border-color: rgba(76,175,80,.40); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(76,175,80,.10) inset; }
+.marketCell.industry{ background: rgba(66,165,245,.22); border-color: rgba(66,165,245,.55); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(66,165,245,.18) inset; }
+.marketCell.mining{ background: rgba(190,116,32,.22); border-color: rgba(190,116,32,.55); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(190,116,32,.18) inset; }
+.marketCell.agri{ background: rgba(76,175,80,.22); border-color: rgba(76,175,80,.55); box-shadow: 0 16px 42px rgba(0,0,0,.30), 0 0 0 1px rgba(76,175,80,.18) inset; }
 
 .marketGlyph.industry{ background: linear-gradient(180deg, rgba(66,165,245,.28), rgba(66,165,245,.10)); }
 .marketGlyph.mining{ background: linear-gradient(180deg, rgba(141,110,99,.28), rgba(141,110,99,.10)); }
@@ -1168,6 +1168,46 @@ button{ font-family:inherit; }
 /* GM modal must be above everything (including superTop + GM button) */
 .modalBackdrop.gmTop{ z-index: 26000 !important; }
 
+/* MOVE confirmation (lock screen) – clearer for other players */
+.lockChoice{
+  margin-top: 16px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  text-align: center;
+}
+.lockArt{
+  position: relative;
+  margin: 18px auto 0;
+  width: 240px;
+  height: 180px;
+}
+.lockContinent{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .55;
+}
+.lockContinentSvg{ filter: drop-shadow(0 10px 18px rgba(0,0,0,.35)); }
+.lockBadgeSquare{
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,.22);
+  box-shadow: 0 14px 28px rgba(0,0,0,.45);
+}
+.lockBadgeSquare.industry{ background: rgba(52, 139, 255, .28); }
+.lockBadgeSquare.mining{ background: rgba(190, 116, 32, .30); }
+.lockBadgeSquare.agri{ background: rgba(64, 192, 108, .28); }
+
 
 /* Lobby helpers (minimal, golden-rule safe) */
 .hint{
@@ -1186,164 +1226,8 @@ button{ font-family:inherit; }
   color: rgba(228,255,245,.95);
 }
 
-/* === Global trend icons (colored, thematic) === */
-.gTrendIcon{ display:inline-block; }
-.gTrendIcon.pos{ color: rgba(76, 175, 80, 0.98); }
-.gTrendIcon.neg{ color: rgba(244, 67, 54, 0.98); }
-.gTrendIcon.neu{ color: rgba(66, 165, 245, 0.98); }
-
-.trendCard.tone-pos{ border-color: rgba(76,175,80,.38); }
-.trendCard.tone-neg{ border-color: rgba(244,67,54,.34); }
-.trendCard.tone-neu{ border-color: rgba(66,165,245,.34); }
-
-/* === Market selection: vivid tiles, same intensity as lock card === */
-.marketCell.industry{
-  background: linear-gradient(180deg, rgba(66,165,245,.42), rgba(66,165,245,.18));
-  border-color: rgba(66,165,245,.52);
-}
-.marketCell.mining{
-  background: linear-gradient(180deg, rgba(141,110,99,.48), rgba(141,110,99,.18));
-  border-color: rgba(141,110,99,.58);
-}
-.marketCell.agri{
-  background: linear-gradient(180deg, rgba(76,175,80,.40), rgba(76,175,80,.16));
-  border-color: rgba(76,175,80,.54);
-}
-
-.marketCellInner.vivid{ gap: 12px; align-items:center; }
-.marketSilWrap{
-  position: relative;
-  flex: 0 0 46%;
-  min-height: 82px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.12);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
-.continentSil{ opacity: .92; }
-.marketTypeSquare{
-  position:absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 62px;
-  height: 62px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.18);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 14px 30px rgba(0,0,0,.35);
-  color: rgba(255,255,255,.96);
-}
-.marketTypeSquare.industry{ background: rgba(66,165,245,.78); }
-.marketTypeSquare.mining{ background: rgba(141,110,99,.82); }
-.marketTypeSquare.agri{ background: rgba(76,175,80,.78); }
-
-.marketCellTitleBig{ font-weight: 950; font-size: 14px; letter-spacing:.2px; }
-.marketCellSub{ margin-top: 6px; font-size: 12px; }
-
-/* === Lock (definitive selection) hero === */
-.lockHero{ margin-top: 14px; display:grid; gap: 12px; }
-.lockHeroTitle{ font-weight: 980; font-size: 24px; letter-spacing:.2px; }
-.lockHeroArt{
-  position: relative;
-  height: 170px;
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.16);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
-.lockTypeSquare{
-  position:absolute;
-  right: 14px;
-  bottom: 14px;
-  width: 86px;
-  height: 86px;
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.18);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 18px 44px rgba(0,0,0,.45);
-  color: rgba(255,255,255,.96);
-}
-.lockTypeSquare.industry{ background: rgba(66,165,245,.86); }
-.lockTypeSquare.mining{ background: rgba(141,110,99,.88); }
-.lockTypeSquare.agri{ background: rgba(76,175,80,.86); }
-
-/* === SETTLE privacy: secret header === */
-.privacyFull.settleSecret{ padding-top: 12px; }
-.secretHeader{
-  width: 100%;
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 18px;
-  border: 1px solid rgba(244,67,54,.55);
-  background: rgba(244,67,54,.18);
-  color: rgba(244,67,54,.98);
-  cursor: pointer;
-}
-.secretHeader:active{ transform: scale(.995); }
-.secretDoc{
-  width: 96px;
-  height: 74px;
-  border-radius: 16px;
-  background: rgba(244,67,54,.24);
-  border: 1px solid rgba(244,67,54,.55);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color: rgba(255,255,255,.96);
-}
-.secretText{ font-weight: 980; font-size: 18px; letter-spacing: .6px; }
-
-/* === Wallet UI (Accounting) === */
-.walletLine{
-  display:flex;
-  justify-content:space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-}
-.walletLine:last-child{ border-bottom: none; }
-.walletLbl{ font-weight: 850; }
-.walletVal{ font-weight: 950; }
-.walletVal.pos{ color: var(--primary); }
-.walletVal.neg{ color: var(--danger); }
-.walletDivider{
-  height: 1px;
-  background: rgba(255,255,255,.10);
-  margin: 10px 0;
-}
-
-.kTable{
-  display:grid;
-  grid-template-columns: 88px 1fr 96px 1fr 1fr;
-  gap: 8px 10px;
-  align-items:center;
-  margin-top: 10px;
-}
-.kHead{
-  font-size: 11px;
-  font-weight: 900;
-  color: rgba(245,247,255,.66);
-  text-transform: uppercase;
-  letter-spacing: .6px;
-}
-.kRow{ display: contents; }
-.kCell{
-  padding: 10px 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.04);
-  font-size: 12px;
-  color: rgba(245,247,255,.92);
-}
+/* Wallet crypto mini table */
+.miniTable{ border:1px solid rgba(255,255,255,.10); border-radius:14px; overflow:hidden; }
+.miniHead,.miniRow{ display:grid; grid-template-columns: 0.8fr 1fr 0.7fr 1fr 1.2fr; gap:10px; padding:10px 12px; }
+.miniHead{ font-weight:900; background: rgba(255,255,255,.06); }
+.miniRow{ border-top:1px solid rgba(255,255,255,.08); }

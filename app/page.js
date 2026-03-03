@@ -62,8 +62,8 @@ export default function Home(){
         ) : null}
 
         <div className="row" style={{marginTop:12}}>
-          <button className="btn" disabled={!name.trim()} onClick={()=>r.push("/create")}>🎩 GM</button>
-          <button className="btn secondary" disabled={!name.trim()} onClick={()=>r.push("/join")}>📷 QR</button>
+          <button className="btn" disabled={!name.trim()} onClick={()=>r.push("/create")}>🎩 Založ hru</button>
+          <button className="btn secondary" disabled={!name.trim()} onClick={()=>r.push("/join")}>📷 Připoj se ke hře</button>
         </div>
 
         <div className="hint" style={{marginTop:10}}>
