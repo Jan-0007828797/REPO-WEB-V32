@@ -416,15 +416,15 @@ button{ font-family:inherit; }
 }
 .marketRowLabel{
   /* Compact continent label so both market squares fit on one row even on mobile. */
-  flex: 0 0 96px; /* fixed width per UX spec */
+  flex: 0 0 88px; /* fixed width per UX spec */
   display:flex;
   align-items:center;
   justify-content:center;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border:1px solid rgba(255,255,255,.10);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  color: rgba(245,247,255,.90);
+  padding: 0; /* clean text only (no "card") */
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: rgba(245,247,255,.92);
   font-weight: 900;
   letter-spacing: .2px;
   text-align:center;
