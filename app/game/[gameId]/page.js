@@ -888,19 +888,61 @@ export default function GamePage(){
                 return x;
               };
 
+              const renderContLabel = (cont) => {
+                const lbl = continentLabel(cont);
+                const parts = lbl.split(" ");
+                if (parts.length >= 2) {
+                  return (
+                    <>
+                      {parts[0]}
+                      <br />
+                      {parts.slice(1).join(" ")}
+                    </>
+                  );
+                }
+                return lbl;
+              };
+
               const continentOrder = ["N_AMERICA", "S_AMERICA", "EUROPE", "AFRICA", "ASIA", "OCEANIA"];
               const nonFarm = markets.filter((m) => !isFarm(m));
               const farms = markets.filter((m) => isFarm(m));
+
+              // Bible rule: each continent offers exactly two distinct market types.
+              // Display order in row must be: Industry -> Mining -> Agriculture.
+              const allowedKindsByCont = {
+                N_AMERICA: ["industry", "mining"],
+                S_AMERICA: ["mining", "agri"],
+                EUROPE: ["industry", "agri"],
+                AFRICA: ["mining", "agri"],
+                ASIA: ["industry", "mining"],
+                OCEANIA: ["industry", "agri"],
+              };
 
               const rows = continentOrder
                 .map((cont) => {
                   const ms = nonFarm.filter((m) => m.continent === cont);
                   if (!ms.length) return null;
-                  const sortKey = (m) => {
-                    const k = kindOf(m);
-                    return k === "industry" ? 0 : k === "mining" ? 1 : k === "agri" ? 2 : 9;
-                  };
-                  const picked = [...ms].sort((a, b) => sortKey(a) - sortKey(b)).slice(0, 2);
+
+                  const wanted = allowedKindsByCont[cont] || [];
+                  // pick first market for each wanted kind (distinct by design)
+                  const picked = wanted
+                    .map((k) => ms.find((m) => kindOf(m) === k))
+                    .filter(Boolean);
+
+                  // Fallback (should not happen): if kinds not detected, keep previous behavior but still enforce distinct kinds.
+                  if (!picked.length) {
+                    const byKind = new Map();
+                    for (const m of ms) {
+                      const k = kindOf(m);
+                      if (!byKind.has(k)) byKind.set(k, m);
+                    }
+                    const order = ["industry", "mining", "agri"];
+                    order.forEach((k) => {
+                      if (byKind.has(k)) picked.push(byKind.get(k));
+                    });
+                    picked.splice(2);
+                  }
+
                   return { cont, markets: picked };
                 })
                 .filter(Boolean);
@@ -938,7 +980,7 @@ export default function GamePage(){
                 <div className="marketTable">
                   {rows.map((r) => (
                     <div key={r.cont} className="marketRow">
-                      <div className="marketRowLabel">{continentLabel(r.cont)}</div>
+                      <div className="marketRowLabel">{renderContLabel(r.cont)}</div>
                       <div className="marketRowCells">
                         {r.markets.map(renderBtn)}
                       </div>
