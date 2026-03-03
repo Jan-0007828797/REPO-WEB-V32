@@ -90,25 +90,6 @@ function MonoIcon({ name, size=28, className="" }){
       </svg>
     );
   }
-  if(name==="eth"){
-    return (
-      <svg {...common} className={className} aria-hidden="true">
-        <path d="M32 6l12 20-12 8-12-8 12-20z" />
-        <path d="M20 30l12 8 12-8" />
-        <path d="M32 38v20" />
-        <path d="M20 44l12 8 12-8" />
-      </svg>
-    );
-  }
-  if(name==="ltc"){
-    return (
-      <svg {...common} className={className} aria-hidden="true">
-        <path d="M30 12h8" />
-        <path d="M30 12L22 44h18" />
-        <path d="M18 28h24" />
-      </svg>
-    );
-  }
   if(name==="receipt"){
     return (
       <svg {...common} className={className} aria-hidden="true">
@@ -856,154 +837,164 @@ export default function GamePage(){
               </div>
             </div>
             {(() => {
-              const isFarm = (m) => {
-                const t = String(m?.type || "").toLowerCase();
-                const n = String(m?.name || "").toLowerCase();
-                const id = String(m?.marketId || "").toLowerCase();
-                return t.includes("farm") || n.includes("farma") || id.startsWith("f");
-              };
-              const kindOf = (m) => {
-                if (isFarm(m)) return "farm";
-                const t = String(m?.type || "").toUpperCase();
-                if (t === "INDUSTRY") return "industry";
-                if (t === "MINING") return "mining";
-                if (t === "AGRO") return "agri";
-                return "other";
+              const year = Number(gs?.year || 1);
+              const myMarketId = getMe(gs, playerId)?.marketId || null;
+
+              const CONT_LABEL = (c)=>{
+                if(c==="N_AMERICA") return ["Sev.","Amerika"];
+                if(c==="S_AMERICA") return ["Již.","Amerika"];
+                if(c==="EUROPE") return ["Evropa"];
+                if(c==="AFRICA") return ["Afrika"];
+                if(c==="ASIA") return ["Asie"];
+                if(c==="OCEANIA") return ["Austrálie"];
+                return [String(c||"")];
               };
 
-              const markFor = (k) => {
-                if(k==="agri") return "agri";
-                if(k==="mining") return "mining";
-                if(k==="industry") return "industry";
-                return "industry";
-              };
-              const continentLabel = (c) => {
-                const x = String(c || "");
-                if (x === "N_AMERICA") return "Sev. Amerika";
-                if (x === "S_AMERICA") return "Již. Amerika";
-                if (x === "EUROPE") return "Evropa";
-                if (x === "AFRICA") return "Afrika";
-                if (x === "ASIA") return "Asie";
-                if (x === "OCEANIA") return "Austrálie";
-                return x;
+              // Variant A: continent has exactly 2 market types (Bible mapping)
+              const CONT_TYPES = {
+                N_AMERICA: ["INDUSTRY","MINING"],
+                S_AMERICA: ["MINING","AGRO"],
+                EUROPE: ["INDUSTRY","AGRO"],
+                AFRICA: ["MINING","AGRO"],
+                ASIA: ["INDUSTRY","MINING"],
+                OCEANIA: ["INDUSTRY","AGRO"],
               };
 
-              const continentOrder = ["N_AMERICA", "S_AMERICA", "EUROPE", "AFRICA", "ASIA", "OCEANIA"];
-              const nonFarm = markets.filter((m) => !isFarm(m));
-              const farms = markets.filter((m) => isFarm(m));
+              const TYPE_UI = (t)=>{
+                const x = String(t||"").toUpperCase();
+                if(x==="INDUSTRY") return { key:"industry", icon:"industry" };
+                if(x==="MINING") return { key:"mining", icon:"mining" };
+                if(x==="AGRO") return { key:"agri", icon:"agri" };
+                return { key:"industry", icon:"industry" };
+              };
 
-              // Pandemic restriction (global trend 15): show selectable markets only on current continent,
-              // and if another player is on that continent, the player must stay on the same market.
-              const y = String(gs?.year || 1);
-              const globals = (gs?.trends?.byYear?.[y]?.globals) || [];
-              const pandemicActive = globals.some(t=>t.key==="PANDEMIC_CONTINENT_LOCK");
-              const pandemicProtected = !!(gs?.lawyer?.protections?.[playerId]?.[y]?.["PANDEMIC_CONTINENT_LOCK"]);
+              const mkMarketId = (continent, type)=> `${continent}_${type}`;
 
-              const myCurrentMarketId = (gs?.players||[]).find(p=>p.playerId===playerId)?.marketId || null;
-              const myCurrent = (nonFarm.find(m=>m.marketId===myCurrentMarketId) || null);
-              const myCont = myCurrent?.continent || null;
-              const otherOnMyContinent = !!myCont && (gs?.players||[]).some(p=>{
+              const parseMy = ()=>{
+                const id = String(myMarketId||"");
+                if(id.startsWith("FARM_")) return { kind:"FARM", slot: Number(id.split("_")[1]||0) };
+                const parts = id.split("_");
+                if(parts.length>=2){
+                  const continent = parts.slice(0, parts.length-1).join("_");
+                  const type = parts[parts.length-1];
+                  return { kind:"MARKET", continent, type };
+                }
+                return { kind:"UNKNOWN" };
+              };
+              const myParsed = parseMy();
+
+              // Pandemic filtering (global trend 15 / key PANDEMIC_CONTINENT_LOCK)
+              const yKey = String(year);
+              const globals = gs?.trends?.byYear?.[yKey]?.globals || [];
+              const pandemic = globals.some(t => t?.key==="PANDEMIC_CONTINENT_LOCK");
+              const pandemicProtected = !!gs?.lawyer?.protections?.[playerId]?.[year]?.["PANDEMIC_CONTINENT_LOCK"];
+
+              const myContinent = (myParsed.kind==="MARKET") ? myParsed.continent : null;
+              const otherOnMyContinent = myContinent ? (gs.players||[]).some(p=>{
                 if(p.playerId===playerId) return false;
-                const mid = p.marketId;
-                const mm = nonFarm.find(m=>m.marketId===mid);
-                return mm?.continent===myCont;
-              });
+                const mid = String(p.marketId||"");
+                return mid.startsWith(myContinent+"_");
+              }) : false;
 
-              const rows = continentOrder
-                .map((cont) => {
-                  const ms = nonFarm.filter((m) => m.continent === cont);
-                  if (!ms.length) return null;
-                  const sortKey = (m) => {
-                    const k = kindOf(m);
-                    return k === "industry" ? 0 : k === "mining" ? 1 : k === "agri" ? 2 : 9;
-                  };
-                  const picked = [...ms].sort((a, b) => sortKey(a) - sortKey(b)).slice(0, 2);
+              const canChooseOutsideContinent = !(pandemic && !pandemicProtected);
+              const mustStaySameMarket = (pandemic && !pandemicProtected && otherOnMyContinent);
 
-                  // Pandemic filtering (keep row, but remove selectable squares outside current continent).
-                  let filtered = picked;
-                  if(pandemicActive && !pandemicProtected){
-                    if(myCont && cont !== myCont) filtered = [];
-                    if(myCont && cont === myCont && otherOnMyContinent){
-                      // must stay on the same market
-                      filtered = picked.filter(m=>m.marketId===myCurrentMarketId);
-                    }
-                  }
-                  return { cont, markets: filtered };
-                })
-                .filter(Boolean);
+              const continentOrder = ["N_AMERICA","S_AMERICA","EUROPE","AFRICA","ASIA","OCEANIA"];
 
-              const renderSquare = (m) => {
-                const lockedBy = locks[m.marketId];
-                const locked = !!lockedBy && lockedBy !== playerId;
-                if(locked) return null; // occupied markets are not visible
-
-                const cls = kindOf(m);
-                const disabled = !!myMove?.committed;
-
-                return (
-                  <button
-                    key={m.marketId}
-                    className={"marketSquare " + cls}
-                    disabled={disabled}
-                    onClick={() => pickMarket(m.marketId)}
-                    aria-label={m.marketId}
-                    title={m.marketId}
-                  >
-                    <MonoIcon name={markFor(cls)} size={40} />
-                  </button>
-                );
+              const isLockedByOther = (marketId)=>{
+                const lockedBy = locks?.[marketId] || null;
+                return !!lockedBy && lockedBy !== playerId;
               };
 
-              const renderFarmSquare = (m, i) => {
-                const lockedBy = locks[m.marketId];
-                const locked = !!lockedBy && lockedBy !== playerId;
-                if(locked) return null;
+              const isMinePosition = (marketId)=> String(myMarketId||"")===String(marketId||"");
 
-                // Pandemic: farms are not selectable unless protected.
-                if(pandemicActive && !pandemicProtected) return null;
+              const pickIfAllowed = (marketId)=>{
+                if(!!myMove?.committed) return;
+                pickMarket(marketId);
+              };
 
-                const icon = i===0 ? "btc" : i===1 ? "eth" : "ltc";
-                const disabled = !!myMove?.committed;
+              const renderSquare = ({ marketId, uiKey, icon, aria })=>{
+                if(isLockedByOther(marketId) && !isMinePosition(marketId)) return null; // must disappear for others
+                const disabled = !!myMove?.committed || (isLockedByOther(marketId) && !isMinePosition(marketId));
                 return (
                   <button
-                    key={m.marketId}
-                    className={"marketSquare farm"}
+                    key={marketId}
+                    className={"moveSquare "+uiKey}
                     disabled={disabled}
-                    onClick={() => pickMarket(m.marketId)}
-                    aria-label={m.marketId}
-                    title={m.marketId}
+                    onClick={()=>pickIfAllowed(marketId)}
+                    aria-label={aria}
+                    title={aria}
                   >
-                    <div className="farmInner" aria-hidden="true">
-                      <MonoIcon name={icon} size={32} />
-                      <div className="farmNum">{i+1}</div>
-                    </div>
+                    <MonoIcon name={icon} size={34} />
                   </button>
                 );
               };
 
               return (
-                <div className="marketTable">
-                  {rows.map((r) => (
-                    <div key={r.cont} className="marketRow">
-                      <div className="marketRowLabel">{continentLabel(r.cont).split(" ").map((w,idx)=>(<span key={idx}>{w}{idx===0 && continentLabel(r.cont).includes(" ") ? <br/>: null}{idx===0 && !continentLabel(r.cont).includes(" ") ? null : null}</span>))}</div>
-                      <div className="marketRowCells">
-                        {r.markets.map(renderSquare)}
-                      </div>
-                    </div>
-                  ))}
+                <div className="moveTable">
+                  {continentOrder.map(cont=>{
+                    const parts = CONT_LABEL(cont);
+                    // Pandemic: without lawyer, show only own continent.
+                    if(!canChooseOutsideContinent && myContinent && cont!==myContinent) return null;
 
-                  <div className="marketRow">
-                    <div className="marketRowLabel">Mining<br/>farmy</div>
-                    <div className="marketRowCells farms">
-                      {[0,1,2].map((i)=>{
-                        const m = farms.find(x=>x.marketId===`FARM_${i+1}`) || { marketId:`FARM_${i+1}`, type:"FARM" };
-                        return renderFarmSquare(m, i);
+                    const types = (CONT_TYPES[cont]||[]).slice();
+                    // keep left-to-right order Industry -> Mining -> Agri
+                    const order = { INDUSTRY:0, MINING:1, AGRO:2 };
+                    types.sort((a,b)=>(order[a]??9)-(order[b]??9));
+
+                    let allowedTypes = types;
+                    if(mustStaySameMarket && cont===myContinent && myParsed.kind==="MARKET"){
+                      // Only current market is allowed if another player is on the same continent (pandemic, no lawyer)
+                      allowedTypes = types.filter(t => mkMarketId(cont,t)===myMarketId);
+                    }
+
+                    const squares = allowedTypes.map(t=>{
+                      const mid = mkMarketId(cont, t);
+                      const ui = TYPE_UI(t);
+                      return renderSquare({ marketId: mid, uiKey: ui.key, icon: ui.icon, aria: `${parts.join(" ")} – ${t}` });
+                    }).filter(Boolean);
+
+                    return (
+                      <div key={cont} className="moveRow">
+                        <div className="moveContinent" aria-label={parts.join(" ")}>
+                          {parts[0]}{parts[1]?<><br/>{parts[1]}</>:null}
+                        </div>
+                        <div className="moveSquares">
+                          {squares}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Mining farms row (only in MOVE, always visible). */}
+                  <div className="moveRow">
+                    <div className="moveContinent" aria-label="Farmy">Farmy</div>
+                    <div className="moveSquares">
+                      {[1,2,3].map(slot=>{
+                        const mid = `FARM_${slot}`;
+                        if(isLockedByOther(mid) && !isMinePosition(mid)) return null;
+                        const disabled = !!myMove?.committed || (isLockedByOther(mid) && !isMinePosition(mid));
+                        return (
+                          <button
+                            key={mid}
+                            className="moveSquare farm"
+                            disabled={disabled}
+                            onClick={()=>pickIfAllowed(mid)}
+                            aria-label={`Mining farma ${slot}`}
+                            title={`Mining farma ${slot}`}
+                          >
+                            <div className="farmInner">
+                              <MonoIcon name="btc" size={30} />
+                              <div className="farmNum">{slot}</div>
+                            </div>
+                          </button>
+                        );
                       })}
                     </div>
                   </div>
                 </div>
               );
-            })()}
+})()}
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="AUCTION_ENVELOPE" ? (
           <div className="card phaseCard">
@@ -1376,35 +1367,26 @@ export default function GamePage(){
         };
         const kindOf = ()=>{
           const t = `${m?.type || ""} ${m?.name || ""}`.toLowerCase();
-          if(t.includes("industry") || t.includes("průmys") || t.includes("prumys")) return "industry";
-          if(t.includes("mining") || t.includes("těž") || t.includes("tez") || t.includes("těža")) return "mining";
-          if(t.includes("agri") || t.includes("agriculture") || t.includes("agro") || t.includes("země") || t.includes("zeme")) return "agri";
+          if(t.includes("průmys") || t.includes("prumys") || t.includes("industry")) return "industry";
+          if(t.includes("těž") || t.includes("tez") || t.includes("mining") || t.includes("těža")) return "mining";
+          if(t.includes("země") || t.includes("zeme") || t.includes("agri") || t.includes("agriculture")) return "agri";
           return "industry";
         };
         const typeLabel = (k)=> k==="industry" ? "Průmysl" : k==="mining" ? "Těžba" : "Zemědělství";
         const k = kindOf();
-        const isFarm = String(m?.type||"").toUpperCase()==="FARM" || String(m?.marketId||"").startsWith("FARM_");
-        const farmNum = isFarm ? String(m?.marketId||"").split("_")[1] : null;
         return (
           <div className="lockBackdrop" aria-label="Definitivní výběr trhu">
             <div className="lockModal">
               <div className="lockTitle">Definitivní výběr trhu</div>
               <div className="lockSub">Ukaž tento displej ostatním hráčům. Okno se zavře až při posunu do další fáze.</div>
-              <div className="lockChoice">{isFarm ? `Mining farma ${farmNum||""}` : `${contLabel(m?.continent)} – ${typeLabel(k)}`}</div>
+              <div className="lockChoice">{`${contLabel(m?.continent)} – ${typeLabel(k)}`}</div>
 
               <div className="lockArt" aria-hidden="true">
                 <div className="lockContinent">
                   <MonoIcon name={contIcon(m?.continent)} size={168} className="lockContinentSvg" />
                 </div>
-                <div className={"lockBadgeSquare "+(isFarm?"farm":k)}>
-                  {isFarm ? (
-                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                      <MonoIcon name={farmNum==="2"?"eth":farmNum==="3"?"ltc":"btc"} size={56} />
-                      <div style={{fontWeight:900,fontSize:56,lineHeight:1}}>{farmNum}</div>
-                    </div>
-                  ) : (
-                    <MonoIcon name={k} size={64} />
-                  )}
+                <div className={"lockBadgeSquare "+k}>
+                  <MonoIcon name={k} size={64} />
                 </div>
               </div>
             </div>
