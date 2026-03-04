@@ -945,8 +945,10 @@ export default function GamePage(){
               const continentOrder = ["N_AMERICA","S_AMERICA","EUROPE","AFRICA","ASIA","OCEANIA"];
 
               const isLockedByOther = (marketId)=>{
+                // Live locks (disappear immediately when someone picks)
                 const lockedBy = locks?.[marketId] || null;
-                return !!lockedBy && lockedBy !== playerId;
+                if(!!lockedBy && lockedBy !== playerId) return true;
+                return false;
               };
 
               const isMinePosition = (marketId)=> String(myMarketId||"")===String(marketId||"");
