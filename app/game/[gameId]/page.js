@@ -1464,13 +1464,6 @@ export default function GamePage(){
         onReveal={()=>setCryptoPrivacy("reveal")}
         onHide={()=>setCryptoPrivacy("hidden")}
       />
-      <PrivacyCard
-        kind="SETTLE"
-        mode={(gs?.phase==="SETTLE" && gs?.settle?.entries?.[playerId]?.committed) ? settlePrivacy : "edit"}
-        amountText={`${settleAmount>=0?"+":""}${settleAmount??0} USD`}
-        onReveal={()=>setSettlePrivacy("reveal")}
-        onHide={()=>setSettlePrivacy("hidden")}
-      />
 
       {/* Tabs */}
       {tab==="trends" ? (
@@ -1528,15 +1521,25 @@ export default function GamePage(){
                   </div>
                 </div>
 
-                <div className="ctaRow" style={{marginTop:12}}>
-                  <button
-                    className={"primaryBtn big full"+(canReveal?"":" disabled")}
-                    onClick={()=>{ if(!canReveal) return; setAuditPopupRevealed(true); }}
-                    disabled={!canReveal}
-                    title={!canReveal ? "Čekám na audit ostatních hráčů" : "Odkrýt"}
-                  >
-                    Odkrýt
-                  </button>
+                                <div className="ctaRow" style={{marginTop:12}}>
+                  {allCommitted && auditPopupRevealed ? (
+                    <button
+                      className="secondaryBtn big full"
+                      onClick={()=>{ setAuditPopupRevealed(false); }}
+                      title="Skrýt"
+                    >
+                      Skrýt
+                    </button>
+                  ) : (
+                    <button
+                      className={"primaryBtn big full"+(canReveal?"":" disabled")}
+                      onClick={()=>{ if(!canReveal) return; setAuditPopupRevealed(true); }}
+                      disabled={!canReveal}
+                      title={!canReveal ? "Čekám na audit ostatních hráčů" : "Odkrýt"}
+                    >
+                      Odkrýt
+                    </button>
+                  )}
                 </div>
               </div>
             );
