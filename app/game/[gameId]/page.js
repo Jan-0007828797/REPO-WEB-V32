@@ -462,6 +462,7 @@ export default function GamePage(){
   // Audit (SETTLE) UX state
   const [auditPreview, setAuditPreview] = useState(null); // {settlementUsd, breakdown}
   const [auditLoading, setAuditLoading] = useState(false);
+  const [auditDetailOpen, setAuditDetailOpen] = useState(false);
   const [expertsOpen, setExpertsOpen] = useState(false);
   const [expertPick, setExpertPick] = useState(null); // expert card
   const [expertTarget, setExpertTarget] = useState(null); // playerId
@@ -684,6 +685,13 @@ export default function GamePage(){
   }
 
   function commitAuction(bid, usedLobbyist){
+    // UX rule: all USD inputs are min 1000 and in multiples of 1000 (unless null)
+    if(bid!=null){
+      const v = Number(bid);
+      if(!Number.isFinite(v) || v<1000 || (v%1000)!==0){
+        return setErr("Nabídka musí být minimálně 1000 USD a v násobcích 1000.");
+      }
+    }
     s.emit("commit_auction_bid", { gameId, playerId, bidUsd: bid, usedLobbyist }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setAucPrivacy("hidden"); // auto hide after commit
@@ -691,6 +699,12 @@ export default function GamePage(){
   }
 
   function commitFinalAuction(finalBid){
+    if(finalBid!=null){
+      const v = Number(finalBid);
+      if(!Number.isFinite(v) || v<1000 || (v%1000)!==0){
+        return setErr("Nabídka musí být minimálně 1000 USD a v násobcích 1000.");
+      }
+    }
     s.emit("commit_auction_final_bid", { gameId, playerId, finalBidUsd: finalBid }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setAucPrivacy("hidden");
@@ -1016,26 +1030,33 @@ export default function GamePage(){
 
             {!aucEntry?.committed ? (
               <>
-                {/* golden rule: keep button styling (classes) identical; only change layout */}
                 <div className="formRow stackConfirm">
                   <input
                     className="inputBig"
                     inputMode="numeric"
-                    placeholder={useLobby ? "Lobbista" : "0"}
-                    maxLength={8}
-                    value={useLobby ? "" : aucBid}
-                    disabled={useLobby}
+                    placeholder="1000"
+                    maxLength={9}
+                    value={aucBid}
                     onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))}
                   />
-                  <button className="primaryBtn big full" onClick={()=>commitAuction(useLobby ? null : (aucBid===""?0:Number(aucBid)), useLobby)}>Potvrdit</button>
+                  <button className="primaryBtn big full" onClick={()=>commitAuction(aucBid===""?null:Number(aucBid), false)}>Potvrdit</button>
                 </div>
-                <div className="formRow">
-                  <label className="checkRow">
-                    <input type="checkbox" checked={useLobby} onChange={(e)=>setUseLobby(e.target.checked)} />
-                    <span>Použít lobbistu (částku zadám až po odhalení nabídek)</span>
-                  </label>
-                </div>
+
                 <button className="secondaryBtn big full" onClick={()=>commitAuction(null, false)}>Nechci dražit</button>
+
+                {(()=>{
+                  const hasLobbyist = (myInv?.experts||[]).some(e=>e.functionKey==="LOBBY_LASTCALL");
+                  return (
+                    <button
+                      className={"secondaryBtn big full"+(hasLobbyist?"":" disabled")}
+                      disabled={!hasLobbyist}
+                      style={hasLobbyist?{background:"#7a0f0f",borderColor:"#ff2a2a"}:{}}
+                      onClick={()=>commitAuction(null, true)}
+                    >
+                      {hasLobbyist?"Lobbista podá nabídku":"Nemáš lobbistu"}
+                    </button>
+                  );
+                })()}
               </>
             ) : (
               <>
@@ -1200,6 +1221,43 @@ export default function GamePage(){
 
               return (
                 <>
+                  {/* V33: Finální audit banner (after starting audit) */}
+                  {committed ? (
+                    <div
+                      className="auditFinalBanner"
+                      onClick={()=>{ if(allCommitted) setAuditDetailOpen(true); }}
+                      role={allCommitted?"button":undefined}
+                      tabIndex={allCommitted?0:undefined}
+                      style={{
+                        background:"#ff1f1f",
+                        border:"2px solid #ff1f1f",
+                        color:"#fff",
+                        borderRadius:18,
+                        padding:14,
+                        display:"flex",
+                        alignItems:"center",
+                        gap:14,
+                        marginBottom:12,
+                        cursor: allCommitted ? "pointer" : "default"
+                      }}
+                    >
+                      <div style={{
+                        width:64,
+                        height:64,
+                        borderRadius:16,
+                        background:"#b80000",
+                        display:"flex",
+                        alignItems:"center",
+                        justifyContent:"center",
+                        fontSize:48,
+                        lineHeight:1
+                      }} aria-hidden="true">📄</div>
+                      <div style={{fontWeight:900}}>
+                        {allCommitted ? "Finální audit - detailní vyúčtování" : "Finální audit - čeká se na audit ostatních hráčů"}
+                      </div>
+                    </div>
+                  ) : null}
+
                   <div className="auditBlock">
                     {auditLoading && !committed ? (
                       <div className="muted">Počítám…</div>
@@ -1449,9 +1507,63 @@ export default function GamePage(){
       ) : null}
 
       {tab==="accounting" ? (
-        <Modal title="Účetnictví" onClose={()=>setTab(null)}>
+        <Modal title="Peněženka" onClose={()=>setTab(null)}>
           <AccountingPanel gs={gs} playerId={playerId} gameId={gameId} />
         </Modal>
+      ) : null}
+
+      {auditDetailOpen && gs?.phase==="SETTLE" ? (
+        <SuperTopModal title="Finální audit - detailní vyúčtování" onClose={()=>setAuditDetailOpen(false)}>
+          {(() => {
+            const entry = gs?.settle?.entries?.[playerId];
+            const sum = entry?.settlementUsd ?? 0;
+            const breakdown = entry?.breakdown || [];
+            const inv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
+
+            // Crypto production summary
+            const prod = { BTC:0, ETH:0, LTC:0, SIA:0 };
+            for(const mf of (inv.miningFarms||[])){
+              const sym = mf.crypto;
+              if(sym && prod[sym]!=null) prod[sym] += Number(mf.cryptoProduction||0);
+            }
+            const hasFarms = (inv.miningFarms||[]).length>0;
+            const rates = gs?.crypto?.rates || {};
+
+            return (
+              <div style={{display:"grid",gap:14}}>
+                <div className={"bigNumber "+(sum>=0?"pos":"neg")}>{sum>=0?"+":""}{sum} USD</div>
+
+                <div className="secTitle">USD</div>
+                <div className="list">
+                  {breakdown.length ? breakdown.map((b, idx)=> (
+                    <div key={idx} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>{b.label}</div>
+                      <div style={{fontWeight:900}}>{b.usd>=0?"+":""}{b.usd} USD</div>
+                    </div>
+                  )) : <div className="muted">Rozpad není k dispozici.</div>}
+                </div>
+
+                <div className="secTitle">Krypto</div>
+                {!hasFarms ? (
+                  <div className="muted">Nemáš mining farmy</div>
+                ) : (
+                  <div className="list">
+                    {(["BTC","ETH","LTC","SIA"]).map(sym=>{
+                      const units = prod[sym]||0;
+                      const usd = units * Number(rates?.[sym]||0);
+                      return (
+                        <div key={sym} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <div>{sym}: +{units} ks</div>
+                          <div style={{fontWeight:900}}>{usd>=0?"+":""}{usd} USD</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </SuperTopModal>
       ) : null}
 
       {expertsOpen && gs?.phase==="SETTLE" ? (
@@ -1461,9 +1573,8 @@ export default function GamePage(){
             const usable = (inv.experts||[]).filter(e=>!e.used && (e.functionKey==="STEAL_BASE_PROD" || e.functionKey==="LAWYER_TRENDS"));
             const others = (gs?.players||[]).filter(p=>p.playerId!==playerId && p.role!=="GM");
 
-            function applySteal(){
-              const effect = { type:"STEAL_BASE_PRODUCTION", targetPlayerId: expertTarget, cardId: expertCard };
-              s.emit("apply_expert_effect", { gameId, playerId, effect }, (res)=>{
+            function applyLobbyist(action){
+              s.emit("apply_audit_lobbyist", { gameId, playerId, action, targetPlayerId: expertTarget }, (res)=>{
                 if(!res?.ok) alert(res?.error || "Chyba");
                 else {
                   setExpertsOpen(false);
@@ -1472,7 +1583,17 @@ export default function GamePage(){
               });
             }
 
-            const step = !expertPick ? 1 : (expertPick.functionKey==="STEAL_BASE_PROD" ? (!expertTarget ? 2 : !expertCard ? 3 : 4) : 9);
+            function activateShield(){
+              s.emit("activate_audit_shield", { gameId, playerId }, (res)=>{
+                if(!res?.ok) alert(res?.error || "Chyba");
+                else {
+                  setExpertsOpen(false);
+                  setExpertPick(null); setExpertTarget(null); setExpertCard(null);
+                }
+              });
+            }
+
+            const step = !expertPick ? 1 : (!expertTarget ? 2 : 3);
 
             return (
               <div className="expertModal">
@@ -1498,15 +1619,14 @@ export default function GamePage(){
                 ) : expertPick.functionKey==="LAWYER_TRENDS" ? (
                   <div className="cardInner">
                     <div className="secTitle">Právník</div>
-                    <div className="muted" style={{marginTop:6}}>
-                      Právníka v této verzi používáš v detailu trendu (ochrana proti trendům). V auditu se jen připomíná, že ho máš k dispozici.
-                    </div>
-                    <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); }}>Zpět</button>
+                    <div className="muted" style={{marginTop:6}}>Štít se aktivuje před zahájením auditu a chrání proti největší škodě od lobbistů v tomto auditu.</div>
+                    <button className="primaryBtn big full" style={{marginTop:12}} onClick={activateShield}>Aktivovat štít</button>
+                    <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); }} style={{marginTop:10}}>Zpět</button>
                   </div>
                 ) : (
                   <>
                     <div className="secTitle">{expertPick.functionLabel}</div>
-                    <div className="muted" style={{marginTop:6}}>Vyber hráče a jeho investici. Efekt se započítá do finálního auditu.</div>
+                    <div className="muted" style={{marginTop:6}}>Vyber hráče a zvol akci lobbisty. Efekt se započítá do finálního auditu.</div>
 
                     {!expertTarget ? (
                       <div className="list" style={{marginTop:10}}>
@@ -1519,31 +1639,22 @@ export default function GamePage(){
                           </button>
                         )) : <div className="muted">Žádní další hráči.</div>}
                       </div>
-                    ) : !expertCard ? (
-                      <div className="list" style={{marginTop:10}}>
-                        {(gs?.inventory?.[expertTarget]?.investments||[]).map(c=>(
-                          <button key={c.cardId} className="listItem clickable" onClick={()=>setExpertCard(c.cardId)}>
-                            <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
-                              <div><b>{c.cardId}</b> • {c.name}</div>
-                              <div className="pill">+{c.usdProduction} USD</div>
-                            </div>
-                            <div className="muted">{c.continent} • {c.type}</div>
-                          </button>
-                        ))}
-                        <button className="secondaryBtn big full" onClick={()=>{ setExpertTarget(null); }}>Změnit hráče</button>
-                      </div>
                     ) : (
-                      <div className="ctaRow" style={{marginTop:12}}>
-                        <button className="primaryBtn big full" onClick={applySteal}>ANO – aplikovat</button>
-                        <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); setExpertTarget(null); setExpertCard(null); }}>NE – zrušit</button>
+                      <div className="cardInner" style={{marginTop:10}}>
+                        <div className="secTitle">Akce lobbisty</div>
+                        <div className="muted" style={{marginTop:6}}>Jeden lobbista lze použít jen jednou: buď sabotér (−50 % produkce z tradičních investic), nebo zloděj (ukradne hodnotu nejvyšší základní produkce).</div>
+                        <div className="ctaRow" style={{marginTop:12}}>
+                          <button className="primaryBtn big full" onClick={()=>applyLobbyist("AUDIT_LOBBYIST_SABOTAGE")}>Sabotér</button>
+                          <button className="primaryBtn big full" onClick={()=>applyLobbyist("AUDIT_LOBBYIST_STEAL")}>Zloděj</button>
+                        </div>
+                        <button className="secondaryBtn big full" onClick={()=>{ setExpertTarget(null); }} style={{marginTop:10}}>Změnit hráče</button>
+                        <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); setExpertTarget(null); setExpertCard(null); }} style={{marginTop:10}}>Zrušit</button>
                       </div>
                     )}
                   </>
                 )}
 
-                {expertPick ? (
-                  <div className="muted" style={{marginTop:10}}>Krok {step}/4</div>
-                ) : null}
+                {expertPick ? (<div className="muted" style={{marginTop:10}}>Krok {step}/3</div>) : null}
               </div>
             );
           })()}
@@ -2103,12 +2214,15 @@ function ExpertsPanel({ inv }){
 
 function AccountingPanel({ gs, playerId, gameId }){
   const inv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
-  const baseUsd = (inv.investments||[]).reduce((s,c)=>s + Number(c.usdProduction||0), 0);
-  // (v3 test) region/global bonus rules are not fully encoded; show nominal placeholders.
-  const regionalBonusUsd = 0;
-  const globalBonusUsd = 0;
-
+  const me = (gs?.players||[]).find(p=>p.playerId===playerId) || {};
+  const investmentsUsd = (inv.investments||[]).reduce((s,c)=>s + Number(c.usdProduction||0), 0);
   const electricityUsd = (inv.miningFarms||[]).reduce((s,c)=>s + Number(c.electricityUSD||0), 0);
+
+  // In test server V32, trends + infra are not fully modeled; keep rows but show computed values when available.
+  const trendsUsd = 0;
+  const infraUsd = 0;
+  const totalUsd = investmentsUsd - electricityUsd + trendsUsd - infraUsd;
+
   const cryptoProd = { BTC:0, ETH:0, LTC:0, SIA:0 };
   for(const mf of (inv.miningFarms||[])){
     const sym = mf.crypto;
@@ -2135,43 +2249,62 @@ function AccountingPanel({ gs, playerId, gameId }){
 
   return (
     <div>
-      <button className="ghostBtn full" onClick={openPreview}>Předběžný audit</button>
+      <button className="ghostBtn full" onClick={openPreview}>Detailní vyúčtování</button>
 
-      <div className="secTitle" style={{marginTop:12}}>Tradiční investice</div>
+      <div className="secTitle" style={{marginTop:12}}>USD</div>
       <div className="list">
         <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Základní produkce</div>
-          <div style={{fontWeight:900,color:"var(--primary)"}}>+{baseUsd} USD</div>
+          <div>Investice</div>
+          <div style={{fontWeight:900,color:"var(--primary)"}}>+{investmentsUsd} USD</div>
         </div>
         <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Regionální bonus</div>
-          <div style={{fontWeight:900,color:"var(--primary)"}}>+{regionalBonusUsd} USD</div>
+          <div>Elektřina</div>
+          <div style={{fontWeight:900,color:"var(--danger)"}}>{electricityUsd?`−${electricityUsd} USD`:"Nemáš mining farmu"}</div>
         </div>
         <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Globální bonus</div>
-          <div style={{fontWeight:900,color:"var(--primary)"}}>+{globalBonusUsd} USD</div>
+          <div>Globální trendy</div>
+          <div style={{fontWeight:900}}>{trendsUsd>=0?"+":""}{trendsUsd} USD</div>
+        </div>
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>Poplatek za infrastrukturu</div>
+          <div style={{fontWeight:900}}>{infraUsd<=0?"0 USD":`−${infraUsd} USD`}</div>
+        </div>
+        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><b>Součet</b></div>
+          <div style={{fontWeight:900}}>{totalUsd>=0?"+":""}{totalUsd} USD</div>
         </div>
       </div>
 
-      <div className="secTitle" style={{marginTop:16}}>Mining farmy</div>
+      <div className="secTitle" style={{marginTop:16}}>Krypto</div>
       <div className="list">
-        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Elektřina</div>
-          <div style={{fontWeight:900,color:"var(--danger)"}}>−{electricityUsd} USD</div>
+        <div className="listItem" style={{display:"grid",gridTemplateColumns:"70px 1fr 70px 90px 90px",gap:10,fontWeight:800,opacity:.8}}>
+          <div>Krypto</div>
+          <div>USD</div>
+          <div>Máš</div>
+          <div>Kurz</div>
+          <div>Těžíš</div>
         </div>
         {(["BTC","ETH","LTC","SIA"]).map(sym=>{
-          const v = cryptoProd[sym] || 0;
+          const owned = Number(me?.wallet?.crypto?.[sym] || 0);
+          const rate = Number(gs?.crypto?.rates?.[sym]||0);
+          const usdVal = owned * rate;
+          const minedUnits = cryptoProd[sym]||0;
+          const minedUsd = minedUnits * rate;
+          const hasFarm = (inv.miningFarms||[]).length>0;
           return (
-            <div key={sym} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>{sym} produkce / rok</div>
-              <div style={{fontWeight:900,color:"var(--primary)"}}>+{v} ks</div>
+            <div key={sym} className="listItem" style={{display:"grid",gridTemplateColumns:"70px 1fr 70px 90px 90px",gap:10,alignItems:"center"}}>
+              <div><b>{sym}</b></div>
+              <div>{usdVal>=0?"+":""}{usdVal} USD</div>
+              <div>{owned}</div>
+              <div>{rate}</div>
+              <div>{!hasFarm?"NE":(minedUsd?`+${minedUsd} USD":"0 USD")}</div>
             </div>
           );
         })}
       </div>
 
       {previewOpen ? (
-        <SuperTopModal title="Předběžný audit" onClose={()=>setPreviewOpen(false)}>
+        <SuperTopModal title="Detailní vyúčtování" onClose={()=>setPreviewOpen(false)}>
           {loading ? (
             <div className="muted">Počítám…</div>
           ) : preview?.error ? (
@@ -2187,9 +2320,6 @@ function AccountingPanel({ gs, playerId, gameId }){
                     <div style={{fontWeight:900}}>{b.usd>=0?"+":""}{b.usd} USD</div>
                   </div>
                 ))}
-              </div>
-              <div className="muted" style={{marginTop:10}}>
-                Pozn.: Předběžný audit je simulace pro test (nezavírá rok).
               </div>
             </>
           )}
