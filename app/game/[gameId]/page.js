@@ -1552,12 +1552,7 @@ export default function GamePage(){
                         <button className="secondaryBtn big full" onClick={()=>{ setExpertTarget(null); }} style={{marginTop:10}}>Změnit hráče</button>
                         <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); setExpertTarget(null); setExpertCard(null); }} style={{marginTop:10}}>Zrušit</button>
                       </div>
-                    ) : (
-                      <div className="ctaRow" style={{marginTop:12}}>
-                        
-                        <button className="secondaryBtn big full" onClick={()=>{ setExpertPick(null); setExpertTarget(null); setExpertCard(null); }}>NE – zrušit</button>
-                      </div>
-                    )}
+                    }
                   </>
                 )}
 
