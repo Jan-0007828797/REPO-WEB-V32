@@ -1,1 +1,0 @@
-WEB v2.5. Set NEXT_PUBLIC_SERVER_URL on Vercel.
