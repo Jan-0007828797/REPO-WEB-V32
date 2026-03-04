@@ -17,14 +17,23 @@ function getMe(gs, playerId){
 function SuperTopModal({ title, onClose, children }){
   // Same behavior/markup as Modal, but guaranteed above other modals.
   useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
+  const hasTitle = !!(title && String(title).trim().length);
   return (
     <div className="modalBackdrop top superTop" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
       <div className="modal">
-        <div className="modalHeader">
-          <div style={{fontWeight:900,fontSize:18}}>{title}</div>
-          <button className="iconBtn" onClick={onClose}>✕</button>
-        </div>
-        <div style={{height:1,background:"rgba(255,255,255,.10)",margin:"12px 0"}}></div>
+        {hasTitle ? (
+          <>
+            <div className="modalHeader">
+              <div style={{fontWeight:900,fontSize:18}}>{title}</div>
+              <button className="iconBtn" onClick={onClose}>✕</button>
+            </div>
+            <div style={{height:1,background:"rgba(255,255,255,.10)",margin:"12px 0"}}></div>
+          </>
+        ) : (
+          <div style={{display:"flex",justifyContent:"flex-end"}}>
+            <button className="iconBtn" onClick={onClose}>✕</button>
+          </div>
+        )}
         {children}
       </div>
     </div>
@@ -463,6 +472,9 @@ export default function GamePage(){
   const [auditPreview, setAuditPreview] = useState(null); // {settlementUsd, breakdown}
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditDetailOpen, setAuditDetailOpen] = useState(false);
+  // V33.1: Finální audit popup (privacy-first)
+  const [auditPopupOpen, setAuditPopupOpen] = useState(false);
+  const [auditPopupRevealed, setAuditPopupRevealed] = useState(false);
   const [expertsOpen, setExpertsOpen] = useState(false);
   const [expertPick, setExpertPick] = useState(null); // expert card
   const [expertTarget, setExpertTarget] = useState(null); // playerId
@@ -567,6 +579,14 @@ export default function GamePage(){
       setAcqHadAny(false);
     }
   }, [gs?.phase, gs?.bizStep, gs?.year]);
+
+  // Close audit popup when leaving SETTLE (golden rule: screens are phase-driven)
+  useEffect(()=>{
+    if(gs?.phase!=="SETTLE"){
+      setAuditPopupOpen(false);
+      setAuditPopupRevealed(false);
+    }
+  }, [gs?.phase]);
 
   // Acquisition scanner lifecycle
   useEffect(()=>{
@@ -725,6 +745,9 @@ export default function GamePage(){
   }
 
   function commitSettle(){
+    // Immediate UX feedback: open the privacy popup instantly.
+    setAuditPopupOpen(true);
+    setAuditPopupRevealed(false);
     s.emit("commit_settlement_ready", { gameId, playerId }, (res)=>{
       if(!res?.ok) return setErr(res?.error||"Chyba");
       setSettlePrivacy("hidden");
@@ -1199,11 +1222,9 @@ export default function GamePage(){
               <div className="phaseLeft">
                 <div className="phaseIcon" aria-hidden="true"><MonoIcon name="receipt" size={48} /></div>
                 <div>
-                  <div className="phaseTitle">{(() => {
-                    const all = gs?.players?.every(p=>gs?.settle?.entries?.[p.playerId]?.committed);
-                    return all ? "Finální audit" : "Audit";
-                  })()}</div>
-                  <div className="phaseSub">Nejdřív zafixuj audit. Pak můžeš povolat experty. Výsledek lze ukázat na celé obrazovce.</div>
+                  {/* Spec: remove the word "Audit" from the screen title */}
+                  <div className="phaseTitle">Finální vyúčtování</div>
+                  <div className="phaseSub">Nejdřív potvrď vyúčtování. Pak můžeš povolat experty. Detail je důvěrný a odkrývá se až na vyžádání.</div>
                 </div>
               </div>
               <button className="ghostBtn" onClick={()=>setTab("accounting")}>Účetnictví</button>
@@ -1212,7 +1233,8 @@ export default function GamePage(){
             {(() => {
               const entry = gs?.settle?.entries?.[playerId];
               const committed = !!entry?.committed;
-              const allCommitted = gs?.players?.every(p=>gs?.settle?.entries?.[p.playerId]?.committed);
+              const activePlayers = (gs?.players||[]).filter(p=>p.role!=="GM");
+              const allCommitted = activePlayers.length ? activePlayers.every(p=>gs?.settle?.entries?.[p.playerId]?.committed) : false;
               const view = committed ? entry : auditPreview;
               const sum = view?.settlementUsd;
               const breakdown = view?.breakdown || [];
@@ -1221,43 +1243,6 @@ export default function GamePage(){
 
               return (
                 <>
-                  {/* V33: Finální audit banner (after starting audit) */}
-                  {committed ? (
-                    <div
-                      className="auditFinalBanner"
-                      onClick={()=>{ if(allCommitted) setAuditDetailOpen(true); }}
-                      role={allCommitted?"button":undefined}
-                      tabIndex={allCommitted?0:undefined}
-                      style={{
-                        background:"#ff1f1f",
-                        border:"2px solid #ff1f1f",
-                        color:"#fff",
-                        borderRadius:18,
-                        padding:14,
-                        display:"flex",
-                        alignItems:"center",
-                        gap:14,
-                        marginBottom:12,
-                        cursor: allCommitted ? "pointer" : "default"
-                      }}
-                    >
-                      <div style={{
-                        width:64,
-                        height:64,
-                        borderRadius:16,
-                        background:"#b80000",
-                        display:"flex",
-                        alignItems:"center",
-                        justifyContent:"center",
-                        fontSize:48,
-                        lineHeight:1
-                      }} aria-hidden="true">📄</div>
-                      <div style={{fontWeight:900}}>
-                        {allCommitted ? "Finální audit - detailní vyúčtování" : "Finální audit - čeká se na audit ostatních hráčů"}
-                      </div>
-                    </div>
-                  ) : null}
-
                   <div className="auditBlock">
                     {auditLoading && !committed ? (
                       <div className="muted">Počítám…</div>
@@ -1289,18 +1274,12 @@ export default function GamePage(){
                       ) : null}
                     </div>
                   ) : (
-                    <>
-                      {!allCommitted ? (
-                        <div className="muted" style={{marginTop:10}}>Čekám na ostatní hráče…</div>
-                      ) : (
-                        <div className="ctaRow">
-                          {usable.length ? (
-                            <button className="secondaryBtn big full" onClick={()=>setExpertsOpen(true)}>Povolat experty</button>
-                          ) : null}
-                          <button className="primaryBtn big full" onClick={()=>{ setSettlePrivacy("reveal"); }}>Potvrdit audit (ukázat)</button>
-                        </div>
-                      )}
-                    </>
+                    <div className="ctaRow">
+                      <button className="primaryBtn big full" onClick={()=>setAuditPopupOpen(true)}>Finální vyúčtování</button>
+                      {usable.length ? (
+                        <button className="secondaryBtn big full" onClick={()=>setExpertsOpen(true)}>Povolat experty</button>
+                      ) : null}
+                    </div>
                   )}
                 </>
               );
@@ -1512,8 +1491,61 @@ export default function GamePage(){
         </Modal>
       ) : null}
 
+      {/* V33.1: Audit popup (privacy-first) */}
+      {gs?.phase==="SETTLE" && auditPopupOpen ? (
+        <SuperTopModal title="" onClose={()=>setAuditPopupOpen(false)}>
+          {(() => {
+            const entry = gs?.settle?.entries?.[playerId];
+            const committed = !!entry?.committed;
+            const activePlayers = (gs?.players||[]).filter(p=>p.role!=="GM");
+            const allCommitted = activePlayers.length ? activePlayers.every(p=>gs?.settle?.entries?.[p.playerId]?.committed) : false;
+
+            const canReveal = allCommitted;
+            const sum = entry?.settlementUsd ?? 0;
+
+            return (
+              <div className="auditPopupWrap">
+                <div
+                  className={"auditPopupPanel "+(allCommitted?"ready":"waiting")}
+                  onClick={()=>{ if(allCommitted) setAuditDetailOpen(true); }}
+                  role={allCommitted?"button":undefined}
+                  tabIndex={allCommitted?0:undefined}
+                >
+                  {allCommitted ? (
+                    <div className="auditPopupIcon" aria-hidden="true">
+                      <MonoIcon name="receipt" size={144} className="auditPopupIconRed" />
+                    </div>
+                  ) : null}
+
+                  <div className="auditPopupText">
+                    <div className="auditPopupHeadline">
+                      {allCommitted ? "Detailní vyúčtování – důvěrné" : "Čeká se na audit ostatních hráčů"}
+                    </div>
+
+                    {allCommitted && auditPopupRevealed ? (
+                      <div className="auditPopupAmount">{sum>=0?"+":""}{sum} USD</div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="ctaRow" style={{marginTop:12}}>
+                  <button
+                    className={"primaryBtn big full"+(canReveal?"":" disabled")}
+                    onClick={()=>{ if(!canReveal) return; setAuditPopupRevealed(true); }}
+                    disabled={!canReveal}
+                    title={!canReveal ? "Čekám na audit ostatních hráčů" : "Odkrýt"}
+                  >
+                    Odkrýt
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </SuperTopModal>
+      ) : null}
+
       {auditDetailOpen && gs?.phase==="SETTLE" ? (
-        <SuperTopModal title="Finální audit - detailní vyúčtování" onClose={()=>setAuditDetailOpen(false)}>
+        <SuperTopModal title="Detailní vyúčtování – důvěrné" onClose={()=>setAuditDetailOpen(false)}>
           {(() => {
             const entry = gs?.settle?.entries?.[playerId];
             const sum = entry?.settlementUsd ?? 0;
