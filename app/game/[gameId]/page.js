@@ -2297,7 +2297,7 @@ function AccountingPanel({ gs, playerId, gameId }){
               <div>{usdVal>=0?"+":""}{usdVal} USD</div>
               <div>{owned}</div>
               <div>{rate}</div>
-              <div>{!hasFarm?"NE":(minedUsd?`+${minedUsd} USD":"0 USD")}</div>
+              <div>{!hasFarm?"NE":(minedUsd?`+${minedUsd} USD`:"0 USD")}</div>
             </div>
           );
         })}
