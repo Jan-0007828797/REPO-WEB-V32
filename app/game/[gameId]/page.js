@@ -14,7 +14,7 @@ function getMe(gs, playerId){
   return (gs?.players || []).find(p => p.playerId === playerId) || null;
 }
 
-function SuperTopModal({ title, onClose, children }){
+function SuperTopModal({ title, onClose, children, hideClose=false }){
   // Same behavior/markup as Modal, but guaranteed above other modals.
   useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
   const hasTitle = !!(title && String(title).trim().length);
@@ -25,13 +25,13 @@ function SuperTopModal({ title, onClose, children }){
           <>
             <div className="modalHeader">
               <div style={{fontWeight:900,fontSize:18}}>{title}</div>
-              <button className="iconBtn" onClick={onClose}>✕</button>
+              {!hideClose ? <button className="iconBtn" onClick={onClose}>✕</button> : null}
             </div>
             <div style={{height:1,background:"rgba(255,255,255,.10)",margin:"12px 0"}}></div>
           </>
         ) : (
           <div style={{display:"flex",justifyContent:"flex-end"}}>
-            <button className="iconBtn" onClick={onClose}>✕</button>
+            {!hideClose ? <button className="iconBtn" onClick={onClose}>✕</button> : null}
           </div>
         )}
         {children}
@@ -806,9 +806,12 @@ export default function GamePage(){
         <div className="topHeaderRow">
           <div>
             <div className="brand">KRYPTOPOLY</div>
+            {gs?.year ? (
+              <div className="brandSub">Rok {gs.year} — Základní cena {Number(gs.year||1)*5000} USD</div>
+            ) : null}
           </div>
           <div className="topHeaderRight">
-            {gs?.year ? <div className="yearPill">Rok {gs.year}</div> : null}
+            {/* intentionally empty: frees the top-right corner for GM and other critical controls */}
           </div>
         </div>
         <PhaseBar phase={gs?.phase} bizStep={gs?.bizStep} />
@@ -1705,18 +1708,18 @@ export default function GamePage(){
       ) : null}
 
       {mlTrendIntroOpen && gs?.phase==="BIZ" && gs?.bizStep==="ML_BID" ? (
-        <Modal
-          title={`Aktuální trend pro Rok ${gs?.year||1}`}
+        <SuperTopModal
+          title="Nové trendy"
           onClose={()=>setMlTrendIntroOpen(false)}
-          variant="top"
+          hideClose={true}
         >
-          <CurrentTrendsMini
+          <NewTrendsMini
             gs={gs}
-            onOpenAll={()=>setTab("trends")}
             onOpenTrend={(t)=>setTrendModal(t)}
             onOpenRegional={(t)=>setRegionalModal(t)}
+            onClose={()=>setMlTrendIntroOpen(false)}
           />
-        </Modal>
+        </SuperTopModal>
       ) : null}
 
       {trendModal ? (
@@ -1820,10 +1823,10 @@ function TrendsPanel({ gs, playerId, onOpenTrend, onOpenRegional, onRevealGlobal
 
       <div className="revealBar">
         <div className="revealChip">Analytik: <b>{analystLeft}</b></div>
-        <button className={"primaryBtn"+(analystLeft<1?" disabled":"")} disabled={analystLeft<1} onClick={onRevealGlobal}>Odkryj globální</button>
+        <button className={"primaryBtn"+(analystLeft<1?" disabled":"")} disabled={analystLeft<1} onClick={onRevealGlobal}>Odemkni Globální trendy</button>
         <div style={{width:12}}></div>
         <div className="revealChip">Kryptoguru: <b>{guruLeft}</b></div>
-        <button className={"primaryBtn"+(guruLeft<1?" disabled":"")} disabled={guruLeft<1} onClick={onRevealCrypto}>Odkryj krypto</button>
+        <button className={"primaryBtn"+(guruLeft<1?" disabled":"")} disabled={guruLeft<1} onClick={onRevealCrypto}>Odemkni Kryptotrendy</button>
       </div>
 
       <div className="yearsScroller">
@@ -1837,7 +1840,7 @@ function TrendsPanel({ gs, playerId, onOpenTrend, onOpenRegional, onRevealGlobal
             <div key={y} className="yearCol">
               <div className="yearTitle">Rok {y}</div>
 
-              <div className="secTitle">Globální</div>
+              <div className="secTitle">Globální trendy</div>
               <div className="cardRow">
                 {data?.globals?.map((t)=>(
                   <TrendCard
@@ -1851,12 +1854,12 @@ function TrendsPanel({ gs, playerId, onOpenTrend, onOpenRegional, onRevealGlobal
                 ))}
               </div>
 
-              <div className="secTitle">Krypto</div>
+              <div className="secTitle">Kryptotrendy</div>
               <div className="cardRow">
                 <CryptoTrendCard revealed={cRevealed} crypto={data?.crypto} />
               </div>
 
-              <div className="secTitle">Regionální</div>
+              <div className="secTitle">Regionální trendy</div>
               <div>
                 {Object.values(data?.regional||{}).map((t)=>{
                   const rRevealed = isCurrentOrPast; // future regional trends are hidden (like global trends)
@@ -1913,7 +1916,7 @@ function TrendsPreviewCard({ gs, onOpen, onOpenTrend, onOpenRegional }){
 
       <div className="trendPreview">
         <div className="trendPreviewBlock">
-          <div className="secTitle">Globální</div>
+          <div className="secTitle">Globální trendy</div>
           <div className="previewRow">
             {(data?.globals||[]).map(t=>(
               <div key={t.trendId} className="previewCard clickable" onClick={()=>onOpenTrend && onOpenTrend(t)} role="button" tabIndex={0}>
@@ -1925,14 +1928,14 @@ function TrendsPreviewCard({ gs, onOpen, onOpenTrend, onOpenRegional }){
         </div>
 
         <div className="trendPreviewBlock">
-          <div className="secTitle">Krypto</div>
+          <div className="secTitle">Kryptotrendy</div>
           <div className="previewRow">
             <CryptoTrendPreview crypto={data?.crypto} />
           </div>
         </div>
 
         <div className="trendPreviewBlock">
-          <div className="secTitle">Regionální</div>
+          <div className="secTitle">Regionální trendy</div>
           <div className="regionalMini">
             {Object.values(data?.regional||{}).map(t=>(
               <div key={t.trendId} className="regionalDot">
@@ -1971,7 +1974,7 @@ function CurrentTrendsMini({ gs, onOpenAll, onOpenTrend, onOpenRegional }){
       <div className="muted" style={{marginTop:-6}}>Aktivní trendy pro tento rok (detail kdykoliv v záložce Trendy).</div>
 
       <div style={{marginTop:12}}>
-        <div className="secTitle">Globální</div>
+        <div className="secTitle">Globální trendy</div>
         <div className="cardRow" style={{marginTop:10}}>
           {globals.length ? globals.map(t=>(
             <TrendCard
@@ -1987,14 +1990,14 @@ function CurrentTrendsMini({ gs, onOpenAll, onOpenTrend, onOpenRegional }){
       </div>
 
       <div style={{marginTop:14}}>
-        <div className="secTitle">Krypto</div>
+        <div className="secTitle">Kryptotrendy</div>
         <div className="cardRow" style={{marginTop:10}}>
           <CryptoTrendCard revealed={true} crypto={crypto} />
         </div>
       </div>
 
       <div style={{marginTop:14}}>
-        <div className="secTitle">Regionální</div>
+        <div className="secTitle">Regionální trendy</div>
         <div style={{marginTop:8}}>
           {Object.values(regional).map(t=>(
             <div key={t.trendId||t.key} className="regRow">
@@ -2011,6 +2014,127 @@ function CurrentTrendsMini({ gs, onOpenAll, onOpenTrend, onOpenRegional }){
       </div>
 
       <button className="ghostBtn full" style={{marginTop:14}} onClick={onOpenAll}>Všechny trendy</button>
+    </div>
+  );
+}
+
+function globalSentiment(t){
+  // 1..16 mapping per Kryptopoly UX bible
+  const id = Number(t?.trendId ?? t?.id);
+  // 🔴 negative
+  if([1,2,4,5,6,8,11,15,16].includes(id)) return "neg";
+  // 🟢 positive
+  if([3,7,12,13].includes(id)) return "pos";
+  // 🔵 depends
+  return "mix";
+}
+
+function GlobalTrendTile({ t, onClick }){
+  const s = globalSentiment(t);
+  return (
+    <button className={"gtTile "+s} onClick={onClick} aria-label={`Detail trendu: ${t?.name||"Trend"}`}>
+      <div className="gtIconBox" aria-hidden="true">
+        <MonoIcon name={globalIconName(t)} size={40} className="gtIcon" />
+      </div>
+      <div className="gtName">{t?.name || "Trend"}</div>
+    </button>
+  );
+}
+
+function CryptoInlineRow({ crypto }){
+  const coeff = crypto?.coeff || {};
+  const coins = ["BTC","ETH","LTC","SIA"];
+  return (
+    <div className="cryptoInlineRow">
+      {coins.map(c=>{
+        const k = Number(coeff[c] ?? 1);
+        const a = arrowForCoeff(k);
+        return (
+          <div key={c} className={"cryptoInlineCell "+a.cls}>
+            <div className="coin">{c}</div>
+            <div className="arrow" aria-label={a.label}>{a.sym}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
+  const y = gs?.year || 1;
+  const data = gs?.trends?.byYear?.[String(y)];
+  const globals = data?.globals || [];
+  const crypto = data?.crypto || null;
+  const regional = data?.regional || {};
+  const orderedContinents = [
+    "Severní Amerika",
+    "Evropa",
+    "Asie",
+    "Jižní Amerika",
+    "Afrika",
+    "Austrálie",
+  ];
+  const regByCont = {};
+  for(const t of Object.values(regional||{})){
+    if(t?.continent) regByCont[t.continent] = t;
+  }
+  const regCls = (t)=>{
+    const k = String(t?.key||"");
+    const n = String(t?.name||"").toLowerCase();
+    if(k.includes("REG_INVESTMENT_BOOM") || n.includes("boom")) return "boom";
+    if(k.includes("REG_HIGH_EDUCATION") || n.includes("vzdělan") || n.includes("vzdelan")) return "edu";
+    if(k.includes("REG_STABILITY") || n.includes("stabil")) return "stable";
+    if(k.includes("REG_TAXES") || n.includes("dan")) return "tax";
+    return "reg";
+  };
+
+  return (
+    <div className="newTrendsWrap">
+      <div className="secTitle">Globální trendy</div>
+      <div className="gtGrid" style={{marginTop:10}}>
+        {(globals.length?globals:[{name:"—"},{name:"—"},{name:"—"}]).slice(0,3).map((t,idx)=> (
+          <GlobalTrendTile key={t?.trendId||t?.key||idx} t={t} onClick={t?.trendId ? ()=>onOpenTrend && onOpenTrend(t) : undefined} />
+        ))}
+      </div>
+      <div className="gtLegend">
+        <span><span className="dot pos"/> pozitivní</span>
+        <span><span className="dot neg"/> negativní</span>
+        <span><span className="dot mix"/> záleží</span>
+      </div>
+
+      <div style={{marginTop:16}}>
+        <div className="secTitle">Kryptotrendy</div>
+        <div style={{marginTop:10}}>
+          <CryptoInlineRow crypto={crypto} />
+        </div>
+      </div>
+
+      <div style={{marginTop:16}}>
+        <div className="secTitle">Regionální trendy</div>
+        <div className="regGrid" style={{marginTop:10}}>
+          {orderedContinents.map((c)=>{
+            const t = regByCont[c];
+            const cls = regCls(t);
+            return (
+              <button
+                key={c}
+                className={"regCell "+cls}
+                onClick={t ? ()=>onOpenRegional && onOpenRegional(t) : undefined}
+                disabled={!t}
+                aria-label={t ? `Detail regionálního trendu: ${c}` : `Regionální trend: ${c} (není k dispozici)`}
+              >
+                <div className="regCellIcon" aria-hidden="true">{t ? (t.icon || "📍") : "—"}</div>
+                <div className="regCellName">{c}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{marginTop:16}}>
+        <button className="primaryBtn big full" onClick={onClose}>Nový rok</button>
+        <div className="muted" style={{marginTop:8,textAlign:"center"}}>Detail trendů kdykoliv v záložce Trendy.</div>
+      </div>
     </div>
   );
 }
