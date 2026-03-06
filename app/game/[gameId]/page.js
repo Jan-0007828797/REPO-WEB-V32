@@ -1956,7 +1956,7 @@ function TrendsPreviewCard({ gs, onOpen, onOpenTrend, onOpenRegional }){
           <div className="previewRow">
             {(data?.globals||[]).map(t=>(
               <div key={t.trendId} className="previewCard clickable" onClick={()=>onOpenTrend && onOpenTrend(t)} role="button" tabIndex={0}>
-                <div className="previewIcon"><MonoIcon name={globalIconName(t)} size={28} /></div>
+                <div className="previewIcon"><MonoIcon name={globalIconName(t)} size={34} /></div>
                 <div className="previewName">{t.name}</div>
               </div>
             ))}
@@ -2159,7 +2159,7 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
                 aria-label={t ? `Detail regionálního trendu: ${c}` : `Regionální trend: ${c} (není k dispozici)`}
               >
                 <div className="regCellIcon" aria-hidden="true">
-                  {t ? <MonoIcon name={regionalTrendIconName(t)} size={28} /> : "—"}
+                  {t ? <MonoIcon name={regionalTrendIconName(t)} size={34} /> : "—"}
                 </div>
                 <div className="regCellName">{c}</div>
               </button>
