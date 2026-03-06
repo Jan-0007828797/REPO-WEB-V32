@@ -975,6 +975,7 @@ button{ font-family:inherit; }
 
 /* --- New Year / New trends popup (ML) --- */
 .newTrendsWrap{ display:grid; gap: 6px; }
+.newTrendsWrap .primaryBtn.full{ margin-top:0; }
 
 .gtGrid{
   display:grid;
@@ -1021,19 +1022,6 @@ button{ font-family:inherit; }
   min-height: 32px;
 }
 
-.gtLegend{
-  display:flex;
-  gap: 12px;
-  flex-wrap:wrap;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-.gtLegend .dot{ display:inline-block; width:10px; height:10px; border-radius:999px; margin-right:6px; vertical-align:middle; }
-.gtLegend .dot.pos{ background: rgba(34,197,94,.75); }
-.gtLegend .dot.neg{ background: rgba(244,63,94,.75); }
-.gtLegend .dot.mix{ background: rgba(56,189,248,.75); }
 
 .cryptoInlineRow{
   display:grid;
@@ -1069,14 +1057,20 @@ button{ font-family:inherit; }
   padding: 12px;
   display:flex;
   flex-direction:column;
-  align-items:flex-start;
+  align-items:center;
+  justify-content:flex-start;
   gap: 10px;
   cursor:pointer;
-  text-align:left;
+  text-align:center;
+  min-height: 108px;
 }
 .regCell:disabled{ opacity:.55; cursor:not-allowed; }
 .regCell:active{ transform: translateY(1px); }
-.regCellIcon{ font-size: 22px; }
+.regCellIcon{ width: 44px; height: 44px; border-radius: 14px; display:flex; align-items:center; justify-content:center; color: rgba(255,255,255,.96); }
+.regCell.boom .regCellIcon{ background: rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.28); }
+.regCell.edu .regCellIcon{ background: rgba(56,189,248,.12); border:1px solid rgba(56,189,248,.28); }
+.regCell.stable .regCellIcon{ background: rgba(167,139,250,.12); border:1px solid rgba(167,139,250,.28); }
+.regCell.tax .regCellIcon{ background: rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.28); }
 .regCellName{ font-size: 13px; font-weight: 950; color: rgba(245,247,255,.94); }
 .modalText{ font-size: 16px; line-height: 1.35; color: rgba(255,255,255,.92); }
 

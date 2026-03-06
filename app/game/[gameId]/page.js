@@ -297,6 +297,32 @@ function MonoIcon({ name, size=28, className="" }){
       </svg>
     );
   }
+  if(name==="cap"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M12 26l20-10 20 10-20 10-20-10z" />
+        <path d="M20 32v8c0 4 6 8 12 8s12-4 12-8v-8" />
+        <path d="M52 28v14" />
+      </svg>
+    );
+  }
+  if(name==="shield"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M32 10l16 6v12c0 12-7 20-16 26-9-6-16-14-16-26V16l16-6z" />
+      </svg>
+    );
+  }
+  if(name==="coins"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <ellipse cx="32" cy="18" rx="14" ry="6" />
+        <path d="M18 18v10c0 3 6 6 14 6s14-3 14-6V18" />
+        <path d="M18 28v10c0 3 6 6 14 6s14-3 14-6V28" />
+        <path d="M18 38v8c0 3 6 6 14 6s14-3 14-6v-8" />
+      </svg>
+    );
+  }
   if(name==="europe"){
     return (
       <svg {...common} className={className} aria-hidden="true">
@@ -360,6 +386,16 @@ function globalIconName(t){
   if(id===14) return "doubleUp";
   if(id===15) return "virus";
   if(id===16) return "inflation";
+  return "pin";
+}
+
+function regionalTrendIconName(t){
+  const k = String(t?.key||"");
+  const n = String(t?.name||"").toLowerCase();
+  if(k.includes("REG_INVESTMENT_BOOM") || n.includes("boom")) return "chartUp";
+  if(k.includes("REG_HIGH_EDUCATION") || n.includes("vzdělan") || n.includes("vzdelan")) return "cap";
+  if(k.includes("REG_STABILITY") || n.includes("stabil")) return "shield";
+  if(k.includes("REG_TAXES") || n.includes("dan")) return "coins";
   return "pin";
 }
 
@@ -2090,16 +2126,15 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
 
   return (
     <div className="newTrendsWrap">
-      <div className="secTitle">Globální trendy</div>
-      <div className="gtGrid" style={{marginTop:10}}>
-        {(globals.length?globals:[{name:"—"},{name:"—"},{name:"—"}]).slice(0,3).map((t,idx)=> (
-          <GlobalTrendTile key={t?.trendId||t?.key||idx} t={t} onClick={t?.trendId ? ()=>onOpenTrend && onOpenTrend(t) : undefined} />
-        ))}
-      </div>
-      <div className="gtLegend">
-        <span><span className="dot pos"/> pozitivní</span>
-        <span><span className="dot neg"/> negativní</span>
-        <span><span className="dot mix"/> záleží</span>
+      <button className="primaryBtn big full" onClick={onClose}>Nový rok</button>
+
+      <div style={{marginTop:6}}>
+        <div className="secTitle">Globální trendy</div>
+        <div className="gtGrid" style={{marginTop:10}}>
+          {(globals.length?globals:[{name:"—"},{name:"—"},{name:"—"}]).slice(0,3).map((t,idx)=> (
+            <GlobalTrendTile key={t?.trendId||t?.key||idx} t={t} onClick={t?.trendId ? ()=>onOpenTrend && onOpenTrend(t) : undefined} />
+          ))}
+        </div>
       </div>
 
       <div style={{marginTop:16}}>
@@ -2123,7 +2158,9 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
                 disabled={!t}
                 aria-label={t ? `Detail regionálního trendu: ${c}` : `Regionální trend: ${c} (není k dispozici)`}
               >
-                <div className="regCellIcon" aria-hidden="true">{t ? (t.icon || "📍") : "—"}</div>
+                <div className="regCellIcon" aria-hidden="true">
+                  {t ? <MonoIcon name={regionalTrendIconName(t)} size={28} /> : "—"}
+                </div>
                 <div className="regCellName">{c}</div>
               </button>
             );
@@ -2131,10 +2168,7 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
         </div>
       </div>
 
-      <div style={{marginTop:16}}>
-        <button className="primaryBtn big full" onClick={onClose}>Nový rok</button>
-        <div className="muted" style={{marginTop:8,textAlign:"center"}}>Detail trendů kdykoliv v záložce Trendy.</div>
-      </div>
+      <div className="muted" style={{marginTop:8,textAlign:"center"}}>Detail trendů kdykoliv v záložce Trendy.</div>
     </div>
   );
 }
