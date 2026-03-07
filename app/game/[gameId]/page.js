@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { getSocket } from "../../../lib/socket";
-import { loadPlayerId } from "../../../lib/storage";
+import { loadPlayerIdForGame } from "../../../lib/storage";
+import { getBasePriceForYear } from "../../../lib/game-config";
 import { playClock, stopClock, playRing, stopRing } from "../../../lib/audio";
 import { BottomBar, BottomBarWrapper, Modal } from "../../ui";
 
@@ -477,7 +478,7 @@ function pickBackCamera(devices = []) {
 export default function GamePage(){
   const { gameId } = useParams();
   const router = useRouter();
-  const playerId = useMemo(()=> (typeof window==="undefined" ? "" : loadPlayerId()), []);
+  const playerId = useMemo(()=> (typeof window==="undefined" ? "" : loadPlayerIdForGame(gameId)), [gameId]);
   // Socket must be initialized before any hooks that reference it (dependency arrays are evaluated during render).
   const s = useMemo(()=> getSocket(), []);
   const [gs, setGs] = useState(null);
@@ -843,7 +844,7 @@ export default function GamePage(){
           <div>
             <div className="brand">KRYPTOPOLY</div>
             {gs?.year ? (
-              <div className="brandSub">Rok {gs.year} — Základní cena {Number(gs.year||1)*5000} USD</div>
+              <div className="brandSub">Rok {gs.year} — Základní cena {getBasePriceForYear(gs.year)} USD</div>
             ) : null}
           </div>
           <div className="topHeaderRight">

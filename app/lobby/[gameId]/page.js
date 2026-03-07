@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
 import { getSocket } from "../../../lib/socket";
-import { loadPlayerId } from "../../../lib/storage";
+import { loadPlayerIdForGame } from "../../../lib/storage";
 
 function seatLabel(p){
   if(p?.role==="GM") return "GM";
@@ -25,7 +25,7 @@ export default function Lobby(){
 
   useEffect(()=>{
     const s=getSocket();
-    const playerId = loadPlayerId();
+    const playerId = loadPlayerIdForGame(gameId);
     s.emit("watch_lobby",{gameId, playerId},()=>{});
     // Keep listening to full game state too (refresh-safe)
     s.emit("watch_game",{gameId, playerId},()=>{});

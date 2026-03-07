@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { loadLastGameId, loadName, loadPlayerId, saveName } from "../lib/storage";
+import { loadLastGameId, loadName, loadPlayerSession, saveName } from "../lib/storage";
 import { useRouter } from "next/navigation";
 import { getSocket } from "../lib/socket";
 
@@ -12,8 +12,9 @@ export default function Home(){
 
   useEffect(()=>{
     setName(loadName());
-    setLastGame(loadLastGameId());
-    setPlayerId(loadPlayerId());
+    const last = loadLastGameId();
+    setLastGame(last);
+    setPlayerId(loadPlayerSession(last).playerId || "");
   },[]);
 
   const canResume = Boolean(lastGame && playerId);

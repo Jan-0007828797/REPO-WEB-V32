@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { loadName, saveName, saveLastGameId, savePlayerId } from "../../lib/storage";
+import { loadName, saveName, saveLastGameId, savePlayerSession } from "../../lib/storage";
 import { getSocket } from "../../lib/socket";
 import { useRouter } from "next/navigation";
 import { ConsentGate } from "../consent";
@@ -20,7 +20,7 @@ export default function Create(){
     const s=getSocket();
     s.emit("create_game",{ name:name.trim(), yearsTotal:Number(yearsTotal), maxPlayers:6 },(res)=>{
       if(!res?.ok){ setErr(res?.error||"Chyba"); return; }
-      savePlayerId(res.playerId);
+      savePlayerSession(res.gameId, { playerId: res.playerId, role: "GM", reconnectToken: res.reconnectToken || "" });
       saveLastGameId(res.gameId);
       stopClock();
       r.push(`/lobby/${res.gameId}?role=gm`);

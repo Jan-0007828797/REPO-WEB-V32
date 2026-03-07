@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { loadLastGameId, loadName, loadPlayerId, saveLastGameId, saveName, savePlayerId } from "../../../lib/storage";
+import { loadLastGameId, loadName, loadPlayerSession, saveLastGameId, saveName, savePlayerSession } from "../../../lib/storage";
 import { getSocket } from "../../../lib/socket";
 
 export default function JoinConfirm(){
@@ -16,14 +16,15 @@ export default function JoinConfirm(){
   // Pokud se vracíme do stejné hry a máme playerId, zkus reconnect automaticky.
   useEffect(()=>{
     const last = loadLastGameId();
-    const pid = loadPlayerId();
+    const session = loadPlayerSession(gameId);
+    const pid = session.playerId || "";
     if(!gameId || !pid || last!==gameId) return;
     setBusy(true);
     const s=getSocket();
     s.emit("reconnect_game",{ gameId, playerId: pid },(res)=>{
       setBusy(false);
       if(res?.ok){
-        savePlayerId(res.playerId);
+        savePlayerSession(gameId, { playerId: res.playerId, role: res.role || "PLAYER", reconnectToken: res.reconnectToken || session.reconnectToken || "" });
         saveLastGameId(gameId);
         const status = res.gameStatus || res.status;
         if(status === "IN_PROGRESS"){
@@ -46,7 +47,7 @@ export default function JoinConfirm(){
       setBusy(false);
       if(!res?.ok){ setErr(res?.error||"Chyba"); return; }
       saveName(n);
-      savePlayerId(res.playerId);
+      savePlayerSession(gameId, { playerId: res.playerId, role: "PLAYER", reconnectToken: res.reconnectToken || "" });
       saveLastGameId(gameId);
       r.push(`/lobby/${gameId}?role=player`);
     });
