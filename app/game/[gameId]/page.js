@@ -2139,12 +2139,12 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
   const crypto = data?.crypto || null;
   const regional = data?.regional || {};
   const orderedContinents = [
-    "Severní Amerika",
-    "Evropa",
-    "Asie",
-    "Jižní Amerika",
-    "Afrika",
-    "Austrálie",
+    { key:"N_AMERICA", label:"Severní Amerika" },
+    { key:"EUROPE", label:"Evropa" },
+    { key:"ASIA", label:"Asie" },
+    { key:"S_AMERICA", label:"Jižní Amerika" },
+    { key:"AFRICA", label:"Afrika" },
+    { key:"OCEANIA", label:"Austrálie" },
   ];
   const regByCont = {};
   for(const t of Object.values(regional||{})){
@@ -2183,21 +2183,21 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
       <div style={{marginTop:16}}>
         <div className="secTitle">Regionální trendy</div>
         <div className="regGrid" style={{marginTop:10}}>
-          {orderedContinents.map((c)=>{
-            const t = regByCont[c];
+          {orderedContinents.map(({ key, label })=>{
+            const t = regByCont[key];
             const cls = regCls(t);
             return (
               <button
-                key={c}
+                key={key}
                 className={"regCell "+cls}
                 onClick={t ? ()=>onOpenRegional && onOpenRegional(t) : undefined}
                 disabled={!t}
-                aria-label={t ? `Detail regionálního trendu: ${c}` : `Regionální trend: ${c} (není k dispozici)`}
+                aria-label={t ? `Detail regionálního trendu: ${label}` : `Regionální trend: ${label} (není k dispozici)`}
               >
                 <div className="regCellIcon" aria-hidden="true">
-                  {t ? <MonoIcon name={regionalTrendIconName(t)} size={34} /> : "—"}
+                  {t ? <span className="regSymIcon">{t.icon || "📍"}</span> : "—"}
                 </div>
-                <div className="regCellName">{c}</div>
+                <div className="regCellName">{label}</div>
               </button>
             );
           })}
