@@ -19,7 +19,12 @@ export default function Lobby(){
   const [players,setPlayers]=useState([]);
   const [cfg,setCfg]=useState(null);
   const [qr,setQr]=useState("");
-  const joinUrl = useMemo(()=> (typeof window==="undefined") ? "" : `${window.location.origin}/join/${gameId}`, [gameId]);
+  const [joinUrl, setJoinUrl] = useState("");
+
+  useEffect(()=>{
+    if (!gameId || typeof window === "undefined") return;
+    setJoinUrl(`${window.location.origin}/join/${gameId}`);
+  },[gameId]);
 
   useEffect(()=>{ (async ()=>{ if(!joinUrl) return; setQr(await QRCode.toDataURL(joinUrl,{margin:2,width:420,errorCorrectionLevel:'H'})); })(); },[joinUrl]);
 

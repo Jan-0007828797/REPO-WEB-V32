@@ -478,7 +478,7 @@ function pickBackCamera(devices = []) {
 export default function GamePage(){
   const { gameId } = useParams();
   const router = useRouter();
-  const playerId = useMemo(()=> (typeof window==="undefined" ? "" : loadPlayerIdForGame(gameId)), [gameId]);
+  const [playerId, setPlayerId] = useState("");
   // Socket must be initialized before any hooks that reference it (dependency arrays are evaluated during render).
   const s = useMemo(()=> getSocket(), []);
   const [gs, setGs] = useState(null);
@@ -508,6 +508,11 @@ export default function GamePage(){
   // Audit (SETTLE) UX state
   const [auditPreview, setAuditPreview] = useState(null); // {settlementUsd, breakdown}
   const [auditLoading, setAuditLoading] = useState(false);
+
+  useEffect(()=>{
+    if (!gameId || typeof window === "undefined") return;
+    setPlayerId(loadPlayerIdForGame(gameId) || "");
+  }, [gameId]);
   const [auditDetailOpen, setAuditDetailOpen] = useState(false);
   // V33.1: Finální audit popup (privacy-first)
   const [auditPopupOpen, setAuditPopupOpen] = useState(false);
