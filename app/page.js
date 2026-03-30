@@ -14,16 +14,19 @@ export default function Home(){
     setName(loadName());
     const last = loadLastGameId();
     setLastGame(last);
-    setPlayerId(loadPlayerSession(last).playerId || "");
+    const session = loadPlayerSession(last);
+    setPlayerId(session.playerId || "");
+    setReconnectToken(session.reconnectToken || "");
   },[]);
 
-  const canResume = Boolean(lastGame && playerId);
+  const [reconnectToken,setReconnectToken]=useState("");
+  const canResume = Boolean(lastGame && (playerId || reconnectToken));
 
   function resumeLast(){
-    if(!lastGame || !playerId) return;
+    if(!lastGame || !(playerId || reconnectToken)) return;
     try{
       const s = getSocket();
-      s.emit("reconnect_game", { gameId: lastGame, playerId }, (res)=>{
+      s.emit("reconnect_game", { gameId: lastGame, playerId, reconnectToken }, (res)=>{
         if(!res?.ok){
           r.push(`/lobby/${lastGame}`);
           return;

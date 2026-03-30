@@ -1093,6 +1093,18 @@ export default function GamePage(){
               </div>
             </div>
 
+            {gs?.biz?.auction?.result ? (
+              <div className="auditBlock" style={{marginBottom:12}}>
+                <div className="auditHeadline">
+                  <div className="auditHint">Výsledek dražby</div>
+                  <div className="auditSum pos">{gs.biz.auction.result.winnerPlayerId ? `${(gs.players||[]).find(p=>p.playerId===gs.biz.auction.result.winnerPlayerId)?.name || 'Hráč'} vyhrál` : 'Nikdo nedražil'}</div>
+                </div>
+                {gs.biz.auction.result.winnerPlayerId ? (
+                  <div className="muted" style={{marginTop:8}}>Vítězná nabídka: <b>{gs.biz.auction.result.amountUsd} USD</b>. Při shodě rozhodl dřívější čas zadání.</div>
+                ) : null}
+              </div>
+            ) : null}
+
             {!aucEntry?.committed ? (
               <>
                 <div className="formRow stackConfirm">
@@ -1306,6 +1318,24 @@ export default function GamePage(){
                         </div>
                       </>
                     )}
+                  </div>
+
+                  <div className="auditBlock" style={{marginTop:12}}>
+                    <div className="auditHint">Veřejná částka vůči bance</div>
+                    <div className="auditTable" style={{marginTop:8}}>
+                      {activePlayers.map(p=>{
+                        const publicEntry = gs?.settle?.entries?.[p.playerId];
+                        const val = Number(publicEntry?.settlementUsd || 0);
+                        return (
+                          <div key={p.playerId} className="auditRow">
+                            <div className="auditLbl">{p.name}</div>
+                            <div className={"auditVal "+(publicEntry?.committed ? (val>0?"pos":val<0?"neg":"neu") : "neu")}>
+                              {publicEntry?.committed ? `${val>=0?"+":""}${val} USD` : "Čeká se"}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {!committed ? (
@@ -2409,6 +2439,7 @@ function ExpertsPanel({ inv }){
 }
 
 function AccountingPanel({ gs, playerId, gameId }){
+  const s = useMemo(()=> getSocket(), []);
   const inv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
   const me = (gs?.players||[]).find(p=>p.playerId===playerId) || {};
   const investmentsUsd = (inv.investments||[]).reduce((s,c)=>s + Number(c.usdProduction||0), 0);

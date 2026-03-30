@@ -18,10 +18,11 @@ export default function JoinConfirm(){
     const last = loadLastGameId();
     const session = loadPlayerSession(gameId);
     const pid = session.playerId || "";
-    if(!gameId || !pid || last!==gameId) return;
+    const reconnectToken = session.reconnectToken || "";
+    if(!gameId || (!(pid || reconnectToken)) || last!==gameId) return;
     setBusy(true);
     const s=getSocket();
-    s.emit("reconnect_game",{ gameId, playerId: pid },(res)=>{
+    s.emit("reconnect_game",{ gameId, playerId: pid, reconnectToken },(res)=>{
       setBusy(false);
       if(res?.ok){
         savePlayerSession(gameId, { playerId: res.playerId, role: res.role || "PLAYER", reconnectToken: res.reconnectToken || session.reconnectToken || "" });
