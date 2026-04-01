@@ -21,7 +21,7 @@ function SuperTopModal({ title, onClose, children, hideClose=false }){
   const hasTitle = !!(title && String(title).trim().length);
   return (
     <div className="modalBackdrop top superTop" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
-      <div className="modal">
+      <div className="modal modalSafe">
         {hasTitle ? (
           <>
             <div className="modalHeader">
@@ -46,7 +46,7 @@ function GMTopModal({ title, onClose, children }){
   useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
   return (
     <div className="modalBackdrop gmTop" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
-      <div className="modal">
+      <div className="modal modalSafe">
         <div className="modalHeader">
           <div style={{fontWeight:900,fontSize:18}}>{title}</div>
           <button className="iconBtn" onClick={onClose}>✕</button>
@@ -409,8 +409,6 @@ function badgeFor(kind){
 }
 
 function PhaseBar({ phase, bizStep }){
-  // Top bar: always show the whole game flow (no popups; fixed screens).
-  // Trends are NOT a phase anymore (still available via bottom tab "Trendy").
   const phases = [
     { key:"ML_BID", label:"Market Leader", icon:"crown" },
     { key:"MOVE", label:"Výběr trhu", icon:"pin" },
@@ -427,12 +425,21 @@ function PhaseBar({ phase, bizStep }){
     return null;
   })();
 
+  const rowRef = useRef(null);
+  const activeRef = useRef(null);
+
+  useEffect(()=>{
+    if(!activeRef.current) return;
+    activeRef.current.scrollIntoView({ behavior:"smooth", inline:"center", block:"nearest" });
+  }, [activeKey]);
+
   return (
-    <div className="stepRow" aria-label="Fáze hry">
-      {phases.map(p=>{
+    <div className="stepRow" aria-label="Fáze hry" ref={rowRef}>
+      {phases.map((p, idx)=>{
         const active = p.key===activeKey;
+        const done = !!activeKey && phases.findIndex(x=>x.key===activeKey) > idx;
         return (
-          <div key={p.key} className={"stepChip"+(active?" active":"")}>
+          <div key={p.key} ref={active ? activeRef : null} className={"stepChip"+(active?" active":"")+(done?" done":"")}>
             <span className="stepIcon" aria-hidden="true"><MonoIcon name={p.icon} size={36} /></span>
             <span className="stepText">{p.label}</span>
           </div>
@@ -2139,12 +2146,12 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
   const crypto = data?.crypto || null;
   const regional = data?.regional || {};
   const orderedContinents = [
-    { key:"N_AMERICA", label:"Severní Amerika" },
-    { key:"EUROPE", label:"Evropa" },
-    { key:"ASIA", label:"Asie" },
-    { key:"S_AMERICA", label:"Jižní Amerika" },
-    { key:"AFRICA", label:"Afrika" },
-    { key:"OCEANIA", label:"Austrálie" },
+    "Severní Amerika",
+    "Evropa",
+    "Asie",
+    "Jižní Amerika",
+    "Afrika",
+    "Austrálie",
   ];
   const regByCont = {};
   for(const t of Object.values(regional||{})){
@@ -2183,21 +2190,21 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
       <div style={{marginTop:16}}>
         <div className="secTitle">Regionální trendy</div>
         <div className="regGrid" style={{marginTop:10}}>
-          {orderedContinents.map(({ key, label })=>{
-            const t = regByCont[key];
+          {orderedContinents.map((c)=>{
+            const t = regByCont[c];
             const cls = regCls(t);
             return (
               <button
-                key={key}
+                key={c}
                 className={"regCell "+cls}
                 onClick={t ? ()=>onOpenRegional && onOpenRegional(t) : undefined}
                 disabled={!t}
-                aria-label={t ? `Detail regionálního trendu: ${label}` : `Regionální trend: ${label} (není k dispozici)`}
+                aria-label={t ? `Detail regionálního trendu: ${c}` : `Regionální trend: ${c} (není k dispozici)`}
               >
                 <div className="regCellIcon" aria-hidden="true">
-                  {t ? <span className="regSymIcon">{t.icon || "📍"}</span> : "—"}
+                  {t ? <MonoIcon name={regionalTrendIconName(t)} size={34} /> : "—"}
                 </div>
-                <div className="regCellName">{label}</div>
+                <div className="regCellName">{c}</div>
               </button>
             );
           })}
@@ -2447,13 +2454,6 @@ function AccountingPanel({ gs, playerId, gameId }){
   const s = useMemo(()=> getSocket(), []);
   const inv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
   const me = (gs?.players||[]).find(p=>p.playerId===playerId) || {};
-  const investmentsUsd = (inv.investments||[]).reduce((s,c)=>s + Number(c.usdProduction||0), 0);
-  const electricityUsd = (inv.miningFarms||[]).reduce((s,c)=>s + Number(c.electricityUSD||0), 0);
-
-  // In test server V32, trends + infra are not fully modeled; keep rows but show computed values when available.
-  const trendsUsd = 0;
-  const infraUsd = 0;
-  const totalUsd = investmentsUsd - electricityUsd + trendsUsd - infraUsd;
 
   const cryptoProd = { BTC:0, ETH:0, LTC:0, SIA:0 };
   for(const mf of (inv.miningFarms||[])){
@@ -2461,100 +2461,130 @@ function AccountingPanel({ gs, playerId, gameId }){
     if(sym && cryptoProd[sym]!=null) cryptoProd[sym] += Number(mf.cryptoProduction||0);
   }
 
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [detailType, setDetailType] = useState(null); // traditional | mining
 
-  function openPreview(){
-    setPreviewOpen(true);
+  useEffect(()=>{
+    let alive = true;
     setLoading(true);
-
     s.emit("preview_audit", { gameId, playerId }, (res)=>{
+      if(!alive) return;
+      if(!res?.ok) setPreview({ error: res?.error || "Chyba" });
+      else setPreview({ settlementUsd: Number(res.settlementUsd||0), breakdown: res.breakdown||[] });
       setLoading(false);
-      if(!res?.ok){
-        setPreview({ error: res?.error || "Chyba" });
-      }else{
-        setPreview({ settlementUsd: res.settlementUsd, breakdown: res.breakdown||[] });
-      }
     });
-  }
+    return ()=>{ alive = false; };
+  }, [s, gameId, playerId, gs?.year, gs?.phase, gs?.bizStep, gs?.settle?.effects]);
+
+  const rates = gs?.crypto?.rates || {};
+  const miningUsd = (["BTC","ETH","LTC","SIA"]).reduce((sum, sym)=> sum + (Number(cryptoProd[sym]||0) * Number(rates?.[sym]||0)), 0);
+  const traditionalUsd = useMemo(()=>{
+    const rows = preview?.breakdown || [];
+    return rows.reduce((sum, row)=>{
+      const label = String(row?.label||"").toLowerCase();
+      if(label.includes("elektř")) return sum;
+      return sum + Number(row?.usd||0);
+    }, 0);
+  }, [preview]);
+  const totalUsd = traditionalUsd + miningUsd;
+
+  const miningLines = (["BTC","ETH","LTC","SIA"]).map(sym=>{
+    const owned = Number(me?.wallet?.crypto?.[sym] || 0);
+    const rate = Number(rates?.[sym] || 0);
+    const produced = Number(cryptoProd[sym] || 0);
+    return { sym, owned, rate, produced, producedUsd: produced * rate, trail: recentCryptoTrendTrail(gs, sym, playerId) };
+  });
+
+  const traditionalBreakdown = (preview?.breakdown || []).filter(row => !String(row?.label||"").toLowerCase().includes("elektř"));
+  const electricityLines = (preview?.breakdown || []).filter(row => String(row?.label||"").toLowerCase().includes("elektř"));
 
   return (
-    <div>
-      <button className="ghostBtn full" onClick={openPreview}>Detailní vyúčtování</button>
-
-      <div className="secTitle" style={{marginTop:12}}>USD</div>
-      <div className="list">
-        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Investice</div>
-          <div style={{fontWeight:900,color:"var(--primary)"}}>+{investmentsUsd} USD</div>
-        </div>
-        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Elektřina</div>
-          <div style={{fontWeight:900,color:"var(--danger)"}}>{electricityUsd?`−${electricityUsd} USD`:"Nemáš mining farmu"}</div>
-        </div>
-        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Globální trendy</div>
-          <div style={{fontWeight:900}}>{trendsUsd>=0?"+":""}{trendsUsd} USD</div>
-        </div>
-        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>Poplatek za infrastrukturu</div>
-          <div style={{fontWeight:900}}>{infraUsd<=0?"0 USD":`−${infraUsd} USD`}</div>
-        </div>
-        <div className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div><b>Součet</b></div>
-          <div style={{fontWeight:900}}>{totalUsd>=0?"+":""}{totalUsd} USD</div>
-        </div>
+    <div className="walletSimple">
+      <div className="walletHero">
+        <div className="walletEyebrow">Očekávaný výsledek auditu</div>
+        <div className={"walletTotal "+(totalUsd>=0?"pos":"neg")}>{loading ? "…" : `${totalUsd>=0?"+":""}${totalUsd} USD`}</div>
       </div>
 
-      <div className="secTitle" style={{marginTop:16}}>Krypto</div>
-      <div className="list">
-        <div className="listItem" style={{display:"grid",gridTemplateColumns:"70px 1fr 70px 90px 90px",gap:10,fontWeight:800,opacity:.8}}>
-          <div>Krypto</div>
-          <div>USD</div>
-          <div>Máš</div>
-          <div>Kurz</div>
-          <div>Těžíš</div>
-        </div>
-        {(["BTC","ETH","LTC","SIA"]).map(sym=>{
-          const owned = Number(me?.wallet?.crypto?.[sym] || 0);
-          const rate = Number(gs?.crypto?.rates?.[sym]||0);
-          const usdVal = owned * rate;
-          const minedUnits = cryptoProd[sym]||0;
-          const minedUsd = minedUnits * rate;
-          const hasFarm = (inv.miningFarms||[]).length>0;
-          return (
-            <div key={sym} className="listItem" style={{display:"grid",gridTemplateColumns:"70px 1fr 70px 90px 90px",gap:10,alignItems:"center"}}>
-              <div><b>{sym}</b></div>
-              <div>{usdVal>=0?"+":""}{usdVal} USD</div>
-              <div>{owned}</div>
-              <div>{rate}</div>
-              <div>{!hasFarm?"NE":(minedUsd?`+${minedUsd} USD`:"0 USD")}</div>
+      <div className="walletSummaryList">
+        <button className="walletSummaryRow" onClick={()=>setDetailType("traditional")} type="button">
+          <span className="walletSummaryLabel">Investice</span>
+          <span className={"walletSummaryValue "+(traditionalUsd>=0?"pos":"neg")}>{loading ? "…" : `${traditionalUsd>=0?"+":""}${traditionalUsd} USD`}</span>
+          <span className="walletSummaryChevron">›</span>
+        </button>
+
+        <button className="walletSummaryRow" onClick={()=>setDetailType("mining")} type="button">
+          <span className="walletSummaryLabel">Krypto (těžba)</span>
+          <span className={"walletSummaryValue "+(miningUsd>=0?"pos":"neg")}>{loading ? "…" : `${miningUsd>=0?"+":""}${miningUsd} USD`}</span>
+          <span className="walletSummaryChevron">›</span>
+        </button>
+      </div>
+
+      <div className="walletPortfolio">
+        <div className="secTitle">Krypto portfolio</div>
+        <div className="walletPortfolioList">
+          {miningLines.map(line=>(
+            <div key={line.sym} className="walletCoinRow">
+              <div className="walletCoinLeft">
+                <div className="walletCoinName">{line.sym}</div>
+                <div className="walletCoinMeta">{line.owned} ks · {line.rate} USD</div>
+              </div>
+              <div className="walletTrendTrail" aria-label={`Trend ${line.sym}`}>
+                {line.trail.map(item => (
+                  <span key={item.key} className={"trendMini "+(item.arrow==="↑"?"up":item.arrow==="↓"?"down":"flat")+(item.future?" future":"")}>{item.arrow}</span>
+                ))}
+              </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      {previewOpen ? (
-        <SuperTopModal title="Detailní vyúčtování" onClose={()=>setPreviewOpen(false)}>
+      {detailType==="traditional" ? (
+        <SuperTopModal title="Investice – detail" onClose={()=>setDetailType(null)}>
           {loading ? (
             <div className="muted">Počítám…</div>
           ) : preview?.error ? (
             <div className="muted">{preview.error}</div>
           ) : (
-            <>
-              <div className="bigNumber">{(preview?.settlementUsd||0)>=0?"+":""}{preview?.settlementUsd||0} USD</div>
-              <div className="secTitle">Rozpad</div>
+            <div className="walletDetail">
+              <div className={"walletDetailTotal "+(traditionalUsd>=0?"pos":"neg")}>{traditionalUsd>=0?"+":""}{traditionalUsd} USD</div>
               <div className="list">
-                {(preview?.breakdown||[]).map((b, idx)=>(
-                  <div key={idx} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div>{b.label}</div>
-                    <div style={{fontWeight:900}}>{b.usd>=0?"+":""}{b.usd} USD</div>
+                {traditionalBreakdown.map((row, idx)=>(
+                  <div key={idx} className="listItem walletListItem">
+                    <div>{row.label}</div>
+                    <div className={Number(row.usd)>=0?"pos":"neg"}>{Number(row.usd)>=0?"+":""}{row.usd} USD</div>
                   </div>
                 ))}
+                {!traditionalBreakdown.length ? <div className="muted">Bez detailu.</div> : null}
               </div>
-            </>
+            </div>
           )}
+        </SuperTopModal>
+      ) : null}
+
+      {detailType==="mining" ? (
+        <SuperTopModal title="Krypto (těžba) – detail" onClose={()=>setDetailType(null)}>
+          <div className="walletDetail">
+            <div className={"walletDetailTotal "+(miningUsd>=0?"pos":"neg")}>{miningUsd>=0?"+":""}{miningUsd} USD</div>
+            <div className="list">
+              {miningLines.map((line)=>(
+                <div key={line.sym} className="listItem walletListItem stack">
+                  <div className="walletMineTop">
+                    <div className="walletMineName">{line.sym}</div>
+                    <div className={line.producedUsd>=0?"pos":"neg"}>{line.producedUsd>=0?"+":""}{line.producedUsd} USD</div>
+                  </div>
+                  <div className="walletMineSub">{line.produced} ks × {line.rate} USD</div>
+                  <div className="walletMineSub light">Máš {line.owned} ks</div>
+                </div>
+              ))}
+              {electricityLines.length ? electricityLines.map((row, idx)=>(
+                <div key={`el-${idx}`} className="listItem walletListItem">
+                  <div>{row.label}</div>
+                  <div className="neg">{row.usd} USD</div>
+                </div>
+              )) : null}
+            </div>
+          </div>
         </SuperTopModal>
       ) : null}
     </div>
