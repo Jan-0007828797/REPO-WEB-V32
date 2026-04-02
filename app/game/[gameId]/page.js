@@ -21,7 +21,7 @@ function SuperTopModal({ title, onClose, children, hideClose=false }){
   const hasTitle = !!(title && String(title).trim().length);
   return (
     <div className="modalBackdrop top superTop" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
-      <div className="modal modalSafe">
+      <div className="modal">
         {hasTitle ? (
           <>
             <div className="modalHeader">
@@ -46,7 +46,7 @@ function GMTopModal({ title, onClose, children }){
   useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
   return (
     <div className="modalBackdrop gmTop" onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
-      <div className="modal modalSafe">
+      <div className="modal">
         <div className="modalHeader">
           <div style={{fontWeight:900,fontSize:18}}>{title}</div>
           <button className="iconBtn" onClick={onClose}>✕</button>
@@ -402,18 +402,20 @@ function regionalTrendIconName(t){
 
 function badgeFor(kind){
   if(kind==="ML") return { icon:"crown", label:"MARKET LEADER" };
-  if(kind==="AUCTION") return { icon:"envelope", label:"DRAŽBA – OBÁLKA" };
+  if(kind==="AUCTION") return { icon:"gavel", label:"DRAŽBA – OBÁLKA" };
   if(kind==="CRYPTO") return { icon:"btc", label:"KRYPTOTRANSAKCE" };
   if(kind==="SETTLE") return { icon:"receipt", label:"AUDIT" };
   return { icon:null, label:"" };
 }
 
 function PhaseBar({ phase, bizStep }){
+  // Top bar: always show the whole game flow (no popups; fixed screens).
+  // Trends are NOT a phase anymore (still available via bottom tab "Trendy").
   const phases = [
     { key:"ML_BID", label:"Market Leader", icon:"crown" },
     { key:"MOVE", label:"Výběr trhu", icon:"pin" },
-    { key:"AUCTION_ENVELOPE", label:"Dražba", icon:"envelope" },
-    { key:"ACQUIRE", label:"Akvizice", icon:"camera" },
+    { key:"AUCTION_ENVELOPE", label:"Dražba", icon:"gavel" },
+    { key:"ACQUIRE", label:"Akvizice", icon:"scan" },
     { key:"CRYPTO", label:"Kryptoburza", icon:"btc" },
     { key:"SETTLE", label:"Audit", icon:"receipt" },
   ];
@@ -426,20 +428,25 @@ function PhaseBar({ phase, bizStep }){
   })();
 
   const rowRef = useRef(null);
-  const activeRef = useRef(null);
+  const chipRefs = useRef({});
 
   useEffect(()=>{
-    if(!activeRef.current) return;
-    activeRef.current.scrollIntoView({ behavior:"smooth", inline:"center", block:"nearest" });
+    const el = chipRefs.current?.[activeKey];
+    if(el && typeof el.scrollIntoView === "function"){
+      el.scrollIntoView({ behavior:"smooth", inline:"center", block:"nearest" });
+    }
   }, [activeKey]);
 
   return (
-    <div className="stepRow" aria-label="Fáze hry" ref={rowRef}>
-      {phases.map((p, idx)=>{
+    <div ref={rowRef} className="stepRow" aria-label="Fáze hry">
+      {phases.map(p=>{
         const active = p.key===activeKey;
-        const done = !!activeKey && phases.findIndex(x=>x.key===activeKey) > idx;
         return (
-          <div key={p.key} ref={active ? activeRef : null} className={"stepChip"+(active?" active":"")+(done?" done":"")}>
+          <div
+            key={p.key}
+            ref={(el)=>{ chipRefs.current[p.key] = el; }}
+            className={"stepChip"+(active?" active":"")}
+          >
             <span className="stepIcon" aria-hidden="true"><MonoIcon name={p.icon} size={36} /></span>
             <span className="stepText">{p.label}</span>
           </div>
@@ -480,6 +487,61 @@ function pickBackCamera(devices = []) {
   const byLabel = devices.find((d) => /back|rear|environment/i.test(d.label || ""));
   if (byLabel) return byLabel;
   return devices[devices.length - 1] || null;
+}
+
+
+function countdownLabel(cd){
+  if(!cd?.active || !Number.isFinite(cd?.remainingMs)) return "";
+  const totalSec = Math.max(0, Math.ceil(cd.remainingMs / 1000));
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+  const ss = String(totalSec % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
+function currentCommitState(gs, pid){
+  const phase = gs?.phase;
+  const step = gs?.bizStep;
+  if(!pid) return false;
+  if(phase==="BIZ" && step==="ML_BID") return !!gs?.biz?.mlBids?.[pid]?.committed;
+  if(phase==="BIZ" && step==="MOVE") return !!gs?.biz?.move?.[pid]?.committed;
+  if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){
+    const entry = gs?.biz?.auction?.entries?.[pid];
+    if(!gs?.biz?.auction?.lobbyistPhaseActive) return !!entry?.committed;
+    if(!entry?.usedLobbyist) return true;
+    return !!entry?.finalCommitted;
+  }
+  if(phase==="CRYPTO") return !!gs?.crypto?.entries?.[pid]?.committed;
+  return false;
+}
+
+function CountdownBanner({ countdown, players, gs, compact=false }){
+  if(!countdown?.active) return null;
+  const total = Math.max(1, Number(countdown.durationMs || 45000));
+  const remaining = Math.max(0, Number(countdown.remainingMs || 0));
+  const pct = Math.max(0, Math.min(100, Math.round((remaining / total) * 100)));
+  const cls = remaining <= 10000 ? "critical" : remaining <= 20000 ? "warn" : "normal";
+  const statusPlayers = (players || []).filter(p=>p.role!=="GM");
+  return (
+    <div className={`countdownBanner ${compact?"compact ":""}${cls}`} aria-live="polite">
+      <div className="countdownMain">
+        <div className="countdownRing" style={{ ["--pct"]: `${pct}%` }}>
+          <div className="countdownValue">{countdownLabel(countdown)}</div>
+        </div>
+        <div className="countdownMeta">
+          <div className="countdownTitle">Odpočet běží</div>
+          <div className="countdownSub">První definitivní volba spustila společný limit pro všechny hráče.</div>
+        </div>
+      </div>
+      <div className="countdownStatusRow">
+        {statusPlayers.map(p=>(
+          <div key={p.playerId} className={"countdownStatusPill"+(currentCommitState(gs, p.playerId)?" ready":" waiting")}>
+            <span className="countdownStatusIcon" aria-hidden="true">{currentCommitState(gs, p.playerId) ? "✓" : "⏳"}</span>
+            <span>{p.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function GamePage(){
@@ -864,6 +926,7 @@ export default function GamePage(){
           </div>
         </div>
         <PhaseBar phase={gs?.phase} bizStep={gs?.bizStep} />
+        <CountdownBanner countdown={gs?.countdown} players={gs?.players} gs={gs} />
       </div>
 
       {isGM && gs?.status==="IN_PROGRESS" ? (
@@ -1097,7 +1160,7 @@ export default function GamePage(){
           <div className="card phaseCard">
             <div className="phaseHeader">
               <div className="phaseLeft">
-                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="envelope" size={48} /></div>
+                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="gavel" size={48} /></div>
                 <div>
                   <div className="phaseTitle">Dražba – obálka</div>
                   <div className="phaseSub">Zadej nabídku v USD, nebo zvol neúčast. Pokud máš lobbistu, můžeš získat „poslední šanci“.</div>
@@ -1182,7 +1245,7 @@ export default function GamePage(){
           <div className="card phaseCard">
             <div className="phaseHeader">
               <div className="phaseLeft">
-                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="camera" size={48} /></div>
+                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="scan" size={48} /></div>
                 <div>
                   <div className="phaseTitle">Akvizice</div>
                   <div className="phaseSub">Definitivně potvrď, zda jsi získal kartu. Pokud ano, naskenuj QR kód (můžeš vícekrát).</div>
@@ -1723,10 +1786,10 @@ export default function GamePage(){
                 {!expertPick ? (
                   <div className="cardsGrid" style={{marginTop:6}}>
                     {usable.map(e=>{
-                      const icon = e.functionKey==="STEAL_BASE_PROD" ? "🕴️" : "⚖️";
+                      const icon = e.functionKey==="STEAL_BASE_PROD" ? "shuffle" : "shield";
                       return (
                         <button key={e.cardId} className="expertPickTile" onClick={()=>setExpertPick(e)}>
-                          <div className="tileIcon">{icon}</div>
+                          <div className="tileIcon"><MonoIcon name={icon} size={30} /></div>
                           <div className="tileMeta">
                             <div className="tileTitle">{e.functionLabel}</div>
                             <div className="tileSub">{e.functionDesc}</div>
@@ -1792,6 +1855,14 @@ export default function GamePage(){
           onClose={()=>setMlTrendIntroOpen(false)}
           hideClose={true}
         >
+          {gs?.countdown?.active ? (
+            <>
+              <CountdownBanner countdown={gs?.countdown} players={gs?.players} gs={gs} compact={true} />
+              <div className="ctaRow" style={{marginTop:10}}>
+                <button className="primaryBtn big full" onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button>
+              </div>
+            </>
+          ) : null}
           <NewTrendsMini
             gs={gs}
             onOpenTrend={(t)=>setTrendModal(t)}
@@ -2146,12 +2217,12 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
   const crypto = data?.crypto || null;
   const regional = data?.regional || {};
   const orderedContinents = [
-    "Severní Amerika",
-    "Evropa",
-    "Asie",
-    "Jižní Amerika",
-    "Afrika",
-    "Austrálie",
+    { key:"N_AMERICA", label:"Severní Amerika" },
+    { key:"EUROPE", label:"Evropa" },
+    { key:"ASIA", label:"Asie" },
+    { key:"S_AMERICA", label:"Jižní Amerika" },
+    { key:"AFRICA", label:"Afrika" },
+    { key:"OCEANIA", label:"Austrálie" },
   ];
   const regByCont = {};
   for(const t of Object.values(regional||{})){
@@ -2190,21 +2261,21 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
       <div style={{marginTop:16}}>
         <div className="secTitle">Regionální trendy</div>
         <div className="regGrid" style={{marginTop:10}}>
-          {orderedContinents.map((c)=>{
-            const t = regByCont[c];
+          {orderedContinents.map(({ key, label })=>{
+            const t = regByCont[key];
             const cls = regCls(t);
             return (
               <button
-                key={c}
+                key={key}
                 className={"regCell "+cls}
                 onClick={t ? ()=>onOpenRegional && onOpenRegional(t) : undefined}
                 disabled={!t}
-                aria-label={t ? `Detail regionálního trendu: ${c}` : `Regionální trend: ${c} (není k dispozici)`}
+                aria-label={t ? `Detail regionálního trendu: ${label}` : `Regionální trend: ${label} (není k dispozici)`}
               >
                 <div className="regCellIcon" aria-hidden="true">
-                  {t ? <MonoIcon name={regionalTrendIconName(t)} size={34} /> : "—"}
+                  {t ? <span className="regSymIcon">{t.icon || "📍"}</span> : "—"}
                 </div>
-                <div className="regCellName">{c}</div>
+                <div className="regCellName">{label}</div>
               </button>
             );
           })}
@@ -2354,16 +2425,16 @@ function CardsPanel({ inv }){
   };
 
   const iconFor = (kind, item) => {
-    if(kind==="MINING_FARM") return "⚙️";
+    if(kind==="MINING_FARM") return "pickaxe";
     if(kind==="EXPERT"){
       const k = String(item?.functionKey||"");
-      if(k.includes("LAWYER")) return "⚖️";
-      if(k.includes("LOBBY") || k.includes("STEAL")) return "🕴️";
-      if(k.includes("ANALYST")) return "🔎";
-      if(k.includes("CRYPTO")) return "🧬";
-      return "🧑‍💼";
+      if(k.includes("LAWYER")) return "shield";
+      if(k.includes("LOBBY") || k.includes("STEAL")) return "shuffle";
+      if(k.includes("ANALYST")) return "chartUp";
+      if(k.includes("CRYPTO")) return "btc";
+      return "crown";
     }
-    return "🃏";
+    return "receipt";
   };
 
   return (
@@ -2461,132 +2532,111 @@ function AccountingPanel({ gs, playerId, gameId }){
     if(sym && cryptoProd[sym]!=null) cryptoProd[sym] += Number(mf.cryptoProduction||0);
   }
 
+  const [detailOpen, setDetailOpen] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [detailType, setDetailType] = useState(null); // traditional | mining
 
   useEffect(()=>{
-    let alive = true;
+    let live = true;
     setLoading(true);
     s.emit("preview_audit", { gameId, playerId }, (res)=>{
-      if(!alive) return;
-      if(!res?.ok) setPreview({ error: res?.error || "Chyba" });
-      else setPreview({ settlementUsd: Number(res.settlementUsd||0), breakdown: res.breakdown||[] });
+      if(!live) return;
+      if(res?.ok){
+        setPreview({ settlementUsd: Number(res.settlementUsd||0), breakdown: res.breakdown||[] });
+      }else{
+        setPreview({ settlementUsd: 0, breakdown: [], error: res?.error || "Chyba" });
+      }
       setLoading(false);
     });
-    return ()=>{ alive = false; };
-  }, [s, gameId, playerId, gs?.year, gs?.phase, gs?.bizStep, gs?.settle?.effects]);
+    return ()=>{ live = false; };
+  }, [s, gameId, playerId]);
 
-  const rates = gs?.crypto?.rates || {};
-  const miningUsd = (["BTC","ETH","LTC","SIA"]).reduce((sum, sym)=> sum + (Number(cryptoProd[sym]||0) * Number(rates?.[sym]||0)), 0);
-  const traditionalUsd = useMemo(()=>{
-    const rows = preview?.breakdown || [];
-    return rows.reduce((sum, row)=>{
-      const label = String(row?.label||"").toLowerCase();
-      if(label.includes("elektř")) return sum;
-      return sum + Number(row?.usd||0);
-    }, 0);
-  }, [preview]);
-  const totalUsd = traditionalUsd + miningUsd;
+  const previewBreakdown = preview?.breakdown || [];
+  const investmentRows = previewBreakdown.filter((b)=>!String(b?.label||"").toLowerCase().includes("elektřina"));
+  const investmentAuditUsd = investmentRows.reduce((sum, b)=> sum + Number(b?.usd||0), 0);
 
-  const miningLines = (["BTC","ETH","LTC","SIA"]).map(sym=>{
-    const owned = Number(me?.wallet?.crypto?.[sym] || 0);
-    const rate = Number(rates?.[sym] || 0);
-    const produced = Number(cryptoProd[sym] || 0);
-    return { sym, owned, rate, produced, producedUsd: produced * rate, trail: recentCryptoTrendTrail(gs, sym, playerId) };
-  });
-
-  const traditionalBreakdown = (preview?.breakdown || []).filter(row => !String(row?.label||"").toLowerCase().includes("elektř"));
-  const electricityLines = (preview?.breakdown || []).filter(row => String(row?.label||"").toLowerCase().includes("elektř"));
+  const cryptoTotal = (["BTC","ETH","LTC","SIA"]).reduce((sum, sym)=>{
+    const rate = Number(gs?.crypto?.rates?.[sym] || 0);
+    const minedUnits = Number(cryptoProd[sym] || 0);
+    return sum + minedUnits * rate;
+  }, 0);
 
   return (
-    <div className="walletSimple">
+    <div>
       <div className="walletHero">
-        <div className="walletEyebrow">Očekávaný výsledek auditu</div>
-        <div className={"walletTotal "+(totalUsd>=0?"pos":"neg")}>{loading ? "…" : `${totalUsd>=0?"+":""}${totalUsd} USD`}</div>
-      </div>
+        <div className="walletHeroLabel">Očekávané výsledky na konci roku</div>
 
-      <div className="walletSummaryList">
-        <button className="walletSummaryRow" onClick={()=>setDetailType("traditional")} type="button">
-          <span className="walletSummaryLabel">Investice</span>
-          <span className={"walletSummaryValue "+(traditionalUsd>=0?"pos":"neg")}>{loading ? "…" : `${traditionalUsd>=0?"+":""}${traditionalUsd} USD`}</span>
-          <span className="walletSummaryChevron">›</span>
+        <button className="walletMainRow" type="button" onClick={()=>setDetailOpen("invest") }>
+          <span className="walletMainLabel">Tradiční investice</span>
+          <span className={"walletMainValue "+((investmentAuditUsd||0)>=0?"pos":"neg")}>{loading ? "…" : `${investmentAuditUsd>=0?"+":""}${investmentAuditUsd.toLocaleString("cs-CZ")} USD`}</span>
         </button>
 
-        <button className="walletSummaryRow" onClick={()=>setDetailType("mining")} type="button">
-          <span className="walletSummaryLabel">Krypto (těžba)</span>
-          <span className={"walletSummaryValue "+(miningUsd>=0?"pos":"neg")}>{loading ? "…" : `${miningUsd>=0?"+":""}${miningUsd} USD`}</span>
-          <span className="walletSummaryChevron">›</span>
+        <button className="walletMainRow" type="button" onClick={()=>setDetailOpen("crypto") }>
+          <span className="walletMainLabel">Těžba kryptoměn</span>
+          <span className={"walletMainValue "+((cryptoTotal||0)>=0?"pos":"neg")}>{`${cryptoTotal>=0?"+":""}${cryptoTotal.toLocaleString("cs-CZ")} USD`}</span>
         </button>
       </div>
 
-      <div className="walletPortfolio">
-        <div className="secTitle">Krypto portfolio</div>
-        <div className="walletPortfolioList">
-          {miningLines.map(line=>(
-            <div key={line.sym} className="walletCoinRow">
-              <div className="walletCoinLeft">
-                <div className="walletCoinName">{line.sym}</div>
-                <div className="walletCoinMeta">{line.owned} ks · {line.rate} USD</div>
-              </div>
-              <div className="walletTrendTrail" aria-label={`Trend ${line.sym}`}>
-                {line.trail.map(item => (
-                  <span key={item.key} className={"trendMini "+(item.arrow==="↑"?"up":item.arrow==="↓"?"down":"flat")+(item.future?" future":"")}>{item.arrow}</span>
-                ))}
-              </div>
+      <div className="secTitle" style={{marginTop:14}}>Krypto portfolio</div>
+      <div className="list compactList" style={{marginTop:8}}>
+        {(["BTC","ETH","LTC","SIA"]).map(sym=>{
+          const owned = Number(me?.wallet?.crypto?.[sym] || 0);
+          const rate = Number(gs?.crypto?.rates?.[sym] || 0);
+          return (
+            <div key={sym} className="listItem compactRow" style={{display:"grid",gridTemplateColumns:"64px 1fr auto",gap:10,alignItems:"center"}}>
+              <div style={{fontWeight:900,fontSize:18}}>{sym}</div>
+              <div className="muted" style={{fontSize:15}}>{owned} ks</div>
+              <div style={{fontWeight:800,fontSize:16}}>{rate.toLocaleString("cs-CZ")} USD</div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {detailType==="traditional" ? (
-        <SuperTopModal title="Investice – detail" onClose={()=>setDetailType(null)}>
+      {detailOpen === "invest" ? (
+        <Modal title="Tradiční investice" onClose={()=>setDetailOpen(null)} variant="top">
           {loading ? (
             <div className="muted">Počítám…</div>
           ) : preview?.error ? (
             <div className="muted">{preview.error}</div>
           ) : (
-            <div className="walletDetail">
-              <div className={"walletDetailTotal "+(traditionalUsd>=0?"pos":"neg")}>{traditionalUsd>=0?"+":""}{traditionalUsd} USD</div>
+            <>
+              <div className={"bigNumber "+(investmentAuditUsd>=0?"pos":"neg")}>{investmentAuditUsd>=0?"+":""}{investmentAuditUsd.toLocaleString("cs-CZ")} USD</div>
               <div className="list">
-                {traditionalBreakdown.map((row, idx)=>(
-                  <div key={idx} className="listItem walletListItem">
-                    <div>{row.label}</div>
-                    <div className={Number(row.usd)>=0?"pos":"neg"}>{Number(row.usd)>=0?"+":""}{row.usd} USD</div>
+                {investmentRows.map((b, idx)=>(
+                  <div key={idx} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+                    <div>{b.label}</div>
+                    <div style={{fontWeight:900}}>{Number(b.usd)>=0?"+":""}{Number(b.usd||0).toLocaleString("cs-CZ")} USD</div>
                   </div>
                 ))}
-                {!traditionalBreakdown.length ? <div className="muted">Bez detailu.</div> : null}
               </div>
-            </div>
+            </>
           )}
-        </SuperTopModal>
+        </Modal>
       ) : null}
 
-      {detailType==="mining" ? (
-        <SuperTopModal title="Krypto (těžba) – detail" onClose={()=>setDetailType(null)}>
-          <div className="walletDetail">
-            <div className={"walletDetailTotal "+(miningUsd>=0?"pos":"neg")}>{miningUsd>=0?"+":""}{miningUsd} USD</div>
-            <div className="list">
-              {miningLines.map((line)=>(
-                <div key={line.sym} className="listItem walletListItem stack">
-                  <div className="walletMineTop">
-                    <div className="walletMineName">{line.sym}</div>
-                    <div className={line.producedUsd>=0?"pos":"neg"}>{line.producedUsd>=0?"+":""}{line.producedUsd} USD</div>
+      {detailOpen === "crypto" ? (
+        <Modal title="Těžba kryptoměn" onClose={()=>setDetailOpen(null)} variant="top">
+          <div className={"bigNumber "+(cryptoTotal>=0?"pos":"neg")}>{cryptoTotal>=0?"+":""}{cryptoTotal.toLocaleString("cs-CZ")} USD</div>
+          <div className="list">
+            {(["BTC","ETH","LTC","SIA"]).map(sym=>{
+              const owned = Number(me?.wallet?.crypto?.[sym] || 0);
+              const minedUnits = Number(cryptoProd[sym] || 0);
+              const rate = Number(gs?.crypto?.rates?.[sym] || 0);
+              const minedUsd = minedUnits * rate;
+              return (
+                <div key={sym} className="listItem" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+                  <div style={{display:"grid",gap:4}}>
+                    <div><b>{sym}</b> • máš {owned} ks</div>
+                    <div className="muted">Těžíš {minedUnits} ks × {rate.toLocaleString("cs-CZ")} USD</div>
                   </div>
-                  <div className="walletMineSub">{line.produced} ks × {line.rate} USD</div>
-                  <div className="walletMineSub light">Máš {line.owned} ks</div>
+                  <div style={{fontWeight:900}}>{minedUsd>=0?"+":""}{minedUsd.toLocaleString("cs-CZ")} USD</div>
                 </div>
-              ))}
-              {electricityLines.length ? electricityLines.map((row, idx)=>(
-                <div key={`el-${idx}`} className="listItem walletListItem">
-                  <div>{row.label}</div>
-                  <div className="neg">{row.usd} USD</div>
-                </div>
-              )) : null}
-            </div>
+              );
+            })}
           </div>
-        </SuperTopModal>
+        </Modal>
       ) : null}
     </div>
   );
 }
+

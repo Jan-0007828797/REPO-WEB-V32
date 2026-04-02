@@ -1,16 +1,16 @@
 "use client";
 import { useEffect } from "react";
-export function Modal({title,onClose,children,variant,modalClassName="", bodyClassName=""}){
+export function Modal({title,onClose,children,variant}){
   useEffect(()=>{ const onKey=(e)=>{ if(e.key==="Escape") onClose?.(); }; window.addEventListener("keydown", onKey); return ()=>window.removeEventListener("keydown", onKey); },[onClose]);
   return (
     <div className={"modalBackdrop"+(variant==="top"?" top":"")} onMouseDown={(e)=>{ if(e.target===e.currentTarget) onClose?.(); }}>
-      <div className={["modal", modalClassName].filter(Boolean).join(" ")}>
+      <div className="modal">
         <div className="modalHeader">
           <div style={{fontWeight:900,fontSize:18}}>{title}</div>
           <button className="iconBtn" onClick={onClose}>✕</button>
         </div>
         <div style={{height:1,background:"rgba(255,255,255,.10)",margin:"12px 0"}}></div>
-        <div className={bodyClassName}>{children}</div>
+        {children}
       </div>
     </div>
   );
@@ -56,6 +56,6 @@ export function BottomBar({onTab, active}){
 // (e.g., MOVE definitive confirmation modal). Visual stays the same.
 export function BottomBarWrapper({ disabled, children }){
   return (
-    <div className={"bottomBarWrap"+(disabled?" disabled":"")}><div className={bodyClassName}>{children}</div></div>
+    <div className={"bottomBarWrap"+(disabled?" disabled":"")}>{children}</div>
   );
 }
