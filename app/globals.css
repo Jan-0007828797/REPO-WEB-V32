@@ -1460,37 +1460,57 @@ button{ font-family:inherit; }
   .walletMainValue{ font-size:22px; }
 }
 
-/* Countdown system */
-.countdownBanner{
-  margin-top:12px;
-  padding:12px 14px;
-  border-radius:18px;
-  border:1px solid var(--stroke2);
-  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
-  box-shadow: var(--shadowSoft);
+.countdownBar{
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border:1px solid rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
 }
-.countdownBanner.compact{ padding:10px 12px; }
-.countdownBanner.warn{ border-color: rgba(251,191,36,.45); }
-.countdownBanner.critical{ border-color: rgba(251,113,133,.5); }
-.countdownMain{ display:flex; align-items:center; gap:12px; }
-.countdownRing{
-  --pct: 100%;
-  width:64px; height:64px; border-radius:999px;
-  display:grid; place-items:center;
-  background: conic-gradient(var(--neoMint) var(--pct), rgba(255,255,255,.10) 0);
-  position:relative; flex:0 0 auto;
+.countdownBar.compact{ margin-top: 0; margin-bottom: 10px; }
+.countdownTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  font-weight:900;
 }
-.countdownBanner.warn .countdownRing{ background: conic-gradient(var(--neoAmber) var(--pct), rgba(255,255,255,.10) 0); }
-.countdownBanner.critical .countdownRing{ background: conic-gradient(var(--danger) var(--pct), rgba(255,255,255,.10) 0); }
-.countdownRing::after{
-  content:""; position:absolute; inset:6px; border-radius:999px; background: rgba(6,9,18,.92); border:1px solid var(--stroke);
+.countdownLabel{ display:flex; align-items:center; gap:8px; color: var(--muted); }
+.countdownTime{ font-family: Orbitron, Inter, system-ui; letter-spacing: 1px; }
+.countdownTrack{
+  margin-top: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  overflow:hidden;
 }
-.countdownValue{ position:relative; z-index:1; font-weight:900; font-size:14px; letter-spacing:.04em; }
-.countdownTitle{ font-weight:900; }
-.countdownSub{ color:var(--muted); font-size:13px; margin-top:2px; }
-.countdownStatusRow{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-.countdownStatusPill{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:6px 10px; border:1px solid var(--stroke); background: rgba(255,255,255,.05); font-size:12px; }
-.countdownStatusPill.ready{ border-color: rgba(52,211,153,.35); background: rgba(52,211,153,.12); }
-.countdownStatusPill.waiting{ border-color: rgba(255,255,255,.12); }
-.countdownStatusIcon{ font-weight:900; }
-.modal .countdownBanner{ margin-top:0; }
+.countdownFill{
+  height:100%;
+  border-radius:999px;
+  background: linear-gradient(90deg, var(--neoMint), var(--neoCyan));
+  transition: width .25s linear;
+}
+.countdownBar.warn .countdownFill{ background: linear-gradient(90deg, var(--neoAmber), var(--neoCyan)); }
+.countdownBar.danger .countdownFill{ background: linear-gradient(90deg, #ff8a8a, var(--danger)); }
+.countdownPlayers{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin: 12px 0 0;
+}
+.countdownPlayer{
+  padding: 7px 10px;
+  border-radius: 999px;
+  border:1px solid var(--stroke);
+  background: rgba(255,255,255,.06);
+  font-size: 12px;
+  font-weight: 800;
+}
+.countdownPlayer.ready{
+  border-color: rgba(52,211,153,.28);
+  background: rgba(52,211,153,.12);
+}
+.countdownPlayer.waiting{
+  border-color: rgba(251,191,36,.28);
+  background: rgba(251,191,36,.12);
+}

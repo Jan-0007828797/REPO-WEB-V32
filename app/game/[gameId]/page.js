@@ -61,13 +61,13 @@ function GMTopModal({ title, onClose, children }){
 function MonoIcon({ name, size=28, className="" }){
   // Monochrome, bold icons (not emoji) – consistent across the whole app.
   const s = Number(size)||28;
-  const common = { viewBox:"0 0 64 64", width:s, height:s, fill:"none", stroke:"currentColor", strokeWidth:5, strokeLinecap:"round", strokeLinejoin:"round" };
+  const common = { viewBox:"0 0 64 64", width:s, height:s, fill:"none", stroke:"currentColor", strokeWidth:4, strokeLinecap:"round", strokeLinejoin:"round" };
   if(name==="crown"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M10 44l6-22 16 14 16-14 6 22" />
-        <path d="M14 44h36" />
-        <path d="M18 52h28" />
+        <path d="M12 46l5-20 15 12 15-12 5 20" />
+        <path d="M16 46h32" />
+        <path d="M20 54h24" />
       </svg>
     );
   }
@@ -82,27 +82,31 @@ function MonoIcon({ name, size=28, className="" }){
   if(name==="envelope"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <rect x="10" y="18" width="44" height="28" rx="6" />
-        <path d="M12 20l20 16 20-16" />
+        <rect x="10" y="18" width="44" height="28" rx="8" />
+        <path d="M12 22l20 15 20-15" />
       </svg>
     );
   }
-  if(name==="camera"){
+  if(name==="scan"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M20 20l4-6h16l4 6" />
-        <rect x="12" y="20" width="40" height="30" rx="8" />
-        <circle cx="32" cy="35" r="9" />
+        <path d="M18 24v-8h10" />
+        <path d="M46 24v-8H36" />
+        <path d="M18 40v8h10" />
+        <path d="M46 40v8H36" />
+        <path d="M24 32h16" />
+        <path d="M28 24v16" />
+        <path d="M36 24v16" />
       </svg>
     );
   }
-  if(name==="btc"){
+  if(name==="coins"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M26 12v40" />
-        <path d="M38 12v40" />
-        <path d="M22 18h16a8 8 0 010 16H22" />
-        <path d="M22 34h18a7 7 0 010 14H22" />
+        <ellipse cx="32" cy="18" rx="14" ry="6" />
+        <path d="M18 18v10c0 3 6 6 14 6s14-3 14-6V18" />
+        <path d="M18 28v10c0 3 6 6 14 6s14-3 14-6V28" />
+        <path d="M18 38v8c0 3 6 6 14 6s14-3 14-6v-8" />
       </svg>
     );
   }
@@ -113,6 +117,30 @@ function MonoIcon({ name, size=28, className="" }){
         <path d="M24 22h16" />
         <path d="M24 30h16" />
         <path d="M24 38h12" />
+      </svg>
+    );
+  }
+  if(name==="gavel"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M18 26l12-12" />
+        <path d="M26 34l12-12" />
+        <path d="M30 14l10 10" />
+        <path d="M22 22l10 10" />
+        <path d="M30 34L18 46" />
+        <path d="M14 50h24" />
+      </svg>
+    );
+  }
+  if(name==="shuffle"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M12 20h10l8 8 8 8h14" />
+        <path d="M44 20h8v8" />
+        <path d="M52 20l-8 8" />
+        <path d="M12 44h10l8-8 8-8" />
+        <path d="M44 44h8v-8" />
+        <path d="M52 44l-8-8" />
       </svg>
     );
   }
@@ -403,7 +431,7 @@ function regionalTrendIconName(t){
 function badgeFor(kind){
   if(kind==="ML") return { icon:"crown", label:"MARKET LEADER" };
   if(kind==="AUCTION") return { icon:"gavel", label:"DRAŽBA – OBÁLKA" };
-  if(kind==="CRYPTO") return { icon:"btc", label:"KRYPTOTRANSAKCE" };
+  if(kind==="CRYPTO") return { icon:"coins", label:"KRYPTOTRANSAKCE" };
   if(kind==="SETTLE") return { icon:"receipt", label:"AUDIT" };
   return { icon:null, label:"" };
 }
@@ -416,7 +444,7 @@ function PhaseBar({ phase, bizStep }){
     { key:"MOVE", label:"Výběr trhu", icon:"pin" },
     { key:"AUCTION_ENVELOPE", label:"Dražba", icon:"gavel" },
     { key:"ACQUIRE", label:"Akvizice", icon:"scan" },
-    { key:"CRYPTO", label:"Kryptoburza", icon:"btc" },
+    { key:"CRYPTO", label:"Kryptoburza", icon:"coins" },
     { key:"SETTLE", label:"Audit", icon:"receipt" },
   ];
 
@@ -456,6 +484,31 @@ function PhaseBar({ phase, bizStep }){
   );
 }
 
+function formatCountdown(remainingMs){
+  const totalSeconds = Math.max(0, Math.ceil(Number(remainingMs||0) / 1000));
+  const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const ss = String(totalSeconds % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
+function CountdownBar({ countdown, compact=false }){
+  const duration = Math.max(1, Number(countdown?.durationMs||45000));
+  const remaining = Math.max(0, Number(countdown?.remainingMs||0));
+  const ratio = Math.max(0, Math.min(1, remaining / duration));
+  const danger = remaining <= 10000;
+  const warn = !danger && remaining <= 20000;
+  const cls = danger ? "danger" : warn ? "warn" : "normal";
+  return (
+    <div className={`countdownBar ${compact?"compact":""} ${cls}`}>
+      <div className="countdownTop">
+        <div className="countdownLabel"><MonoIcon name="stopwatch" size={compact?18:20} /> <span>Odpočet</span></div>
+        <div className="countdownTime">{formatCountdown(remaining)}</div>
+      </div>
+      <div className="countdownTrack"><div className="countdownFill" style={{ width: `${ratio*100}%` }} /></div>
+    </div>
+  );
+}
+
 function PrivacyCard({ kind, mode, amountText, onReveal, onHide }){
   const b = badgeFor(kind);
   if(mode==="edit") return null;
@@ -489,61 +542,6 @@ function pickBackCamera(devices = []) {
   return devices[devices.length - 1] || null;
 }
 
-
-function countdownLabel(cd){
-  if(!cd?.active || !Number.isFinite(cd?.remainingMs)) return "";
-  const totalSec = Math.max(0, Math.ceil(cd.remainingMs / 1000));
-  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
-  const ss = String(totalSec % 60).padStart(2, "0");
-  return `${mm}:${ss}`;
-}
-
-function currentCommitState(gs, pid){
-  const phase = gs?.phase;
-  const step = gs?.bizStep;
-  if(!pid) return false;
-  if(phase==="BIZ" && step==="ML_BID") return !!gs?.biz?.mlBids?.[pid]?.committed;
-  if(phase==="BIZ" && step==="MOVE") return !!gs?.biz?.move?.[pid]?.committed;
-  if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){
-    const entry = gs?.biz?.auction?.entries?.[pid];
-    if(!gs?.biz?.auction?.lobbyistPhaseActive) return !!entry?.committed;
-    if(!entry?.usedLobbyist) return true;
-    return !!entry?.finalCommitted;
-  }
-  if(phase==="CRYPTO") return !!gs?.crypto?.entries?.[pid]?.committed;
-  return false;
-}
-
-function CountdownBanner({ countdown, players, gs, compact=false }){
-  if(!countdown?.active) return null;
-  const total = Math.max(1, Number(countdown.durationMs || 45000));
-  const remaining = Math.max(0, Number(countdown.remainingMs || 0));
-  const pct = Math.max(0, Math.min(100, Math.round((remaining / total) * 100)));
-  const cls = remaining <= 10000 ? "critical" : remaining <= 20000 ? "warn" : "normal";
-  const statusPlayers = (players || []).filter(p=>p.role!=="GM");
-  return (
-    <div className={`countdownBanner ${compact?"compact ":""}${cls}`} aria-live="polite">
-      <div className="countdownMain">
-        <div className="countdownRing" style={{ ["--pct"]: `${pct}%` }}>
-          <div className="countdownValue">{countdownLabel(countdown)}</div>
-        </div>
-        <div className="countdownMeta">
-          <div className="countdownTitle">Odpočet běží</div>
-          <div className="countdownSub">První definitivní volba spustila společný limit pro všechny hráče.</div>
-        </div>
-      </div>
-      <div className="countdownStatusRow">
-        {statusPlayers.map(p=>(
-          <div key={p.playerId} className={"countdownStatusPill"+(currentCommitState(gs, p.playerId)?" ready":" waiting")}>
-            <span className="countdownStatusIcon" aria-hidden="true">{currentCommitState(gs, p.playerId) ? "✓" : "⏳"}</span>
-            <span>{p.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function GamePage(){
   const { gameId } = useParams();
   const router = useRouter();
@@ -551,6 +549,7 @@ export default function GamePage(){
   // Socket must be initialized before any hooks that reference it (dependency arrays are evaluated during render).
   const s = useMemo(()=> getSocket(), []);
   const [gs, setGs] = useState(null);
+  const [countdownNow, setCountdownNow] = useState(Date.now());
   const [err, setErr] = useState("");
   const [tab, setTab] = useState(null);
   const [gmPanelOpen, setGmPanelOpen] = useState(false);
@@ -602,7 +601,7 @@ export default function GamePage(){
   const codeReader = useMemo(()=> new BrowserMultiFormatReader(), []);
 
   useEffect(()=>{
-
+    if(!gameId) return;
     s.emit("watch_game", { gameId, playerId }, (res)=>{
       if(!res?.ok) setErr(res?.error || "Nelze načíst hru.");
     });
@@ -612,7 +611,7 @@ export default function GamePage(){
     };
     s.on("game_state", onState);
     return ()=> s.off("game_state", onState);
-  }, [gameId]);
+  }, [gameId, playerId, s]);
 
   const me = gs?.players?.find(p=>p.playerId===playerId) || null;
   const isGM = me?.role==="GM";
@@ -907,6 +906,19 @@ export default function GamePage(){
   const myInv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
   const myReveals = gs?.reveals?.[playerId] || { globalYearsRevealed:[], cryptoYearsRevealed:[] };
 
+  const countdownView = useMemo(()=>{
+    const raw = gs?.countdown;
+    if(!raw?.active || !raw?.endsAt) return null;
+    const remainingMs = Math.max(0, Number(raw.endsAt) - countdownNow);
+    return { ...raw, remainingMs };
+  }, [gs?.countdown, countdownNow]);
+
+  useEffect(()=>{
+    if(!countdownView?.active) return;
+    const id = setInterval(()=> setCountdownNow(Date.now()), 250);
+    return ()=> clearInterval(id);
+  }, [countdownView?.active, countdownView?.endsAt]);
+
   if(err){
     // keep minimal
   }
@@ -926,7 +938,7 @@ export default function GamePage(){
           </div>
         </div>
         <PhaseBar phase={gs?.phase} bizStep={gs?.bizStep} />
-        <CountdownBanner countdown={gs?.countdown} players={gs?.players} gs={gs} />
+        {countdownView ? <CountdownBar countdown={countdownView} /> : null}
       </div>
 
       {isGM && gs?.status==="IN_PROGRESS" ? (
@@ -948,6 +960,22 @@ export default function GamePage(){
       ) : null}
 
       {err ? <div className="toast" onClick={()=>setErr("")}>{err}</div> : null}
+      {countdownView ? (
+        <div className="countdownPlayers">
+          {(gs?.players||[]).filter(p=>p.role!=="GM").map((p)=>{
+            const step = gs?.bizStep; const phase = gs?.phase;
+            let ready = false;
+            if(phase==="BIZ" && step==="ML_BID") ready = !!gs?.biz?.mlBids?.[p.playerId]?.committed;
+            else if(phase==="BIZ" && step==="MOVE") ready = !!gs?.biz?.move?.[p.playerId]?.committed;
+            else if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){
+              const e = gs?.biz?.auction?.entries?.[p.playerId];
+              ready = !gs?.biz?.auction?.lobbyistPhaseActive ? !!e?.committed : (!e?.usedLobbyist || !!e?.finalCommitted);
+            }
+            else if(phase==="CRYPTO") ready = !!gs?.crypto?.entries?.[p.playerId]?.committed;
+            return <div key={p.playerId} className={`countdownPlayer ${ready?"ready":"waiting"}`}>{ready?"✓":"⏳"} {p.name}</div>;
+          })}
+        </div>
+      ) : null}
 
       <div className="content">
         {!gs ? (
@@ -1281,7 +1309,7 @@ export default function GamePage(){
           <div className="card phaseCard">
             <div className="phaseHeader">
               <div className="phaseLeft">
-                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="btc" size={48} /></div>
+                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="coins" size={48} /></div>
                 <div>
                   <div className="phaseTitle">Kryptoburza</div>
                   <div className="phaseSub">Naklikej změny v kusech. Pak potvrď. Ukazovací režim skryje detaily.</div>
@@ -1786,10 +1814,10 @@ export default function GamePage(){
                 {!expertPick ? (
                   <div className="cardsGrid" style={{marginTop:6}}>
                     {usable.map(e=>{
-                      const icon = e.functionKey==="STEAL_BASE_PROD" ? "shuffle" : "shield";
+                      const icon = e.functionKey==="STEAL_BASE_PROD" ? "🕴️" : "⚖️";
                       return (
                         <button key={e.cardId} className="expertPickTile" onClick={()=>setExpertPick(e)}>
-                          <div className="tileIcon"><MonoIcon name={icon} size={30} /></div>
+                          <div className="tileIcon">{icon}</div>
                           <div className="tileMeta">
                             <div className="tileTitle">{e.functionLabel}</div>
                             <div className="tileSub">{e.functionDesc}</div>
@@ -1855,20 +1883,14 @@ export default function GamePage(){
           onClose={()=>setMlTrendIntroOpen(false)}
           hideClose={true}
         >
-          {gs?.countdown?.active ? (
-            <>
-              <CountdownBanner countdown={gs?.countdown} players={gs?.players} gs={gs} compact={true} />
-              <div className="ctaRow" style={{marginTop:10}}>
-                <button className="primaryBtn big full" onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button>
-              </div>
-            </>
-          ) : null}
+          {countdownView ? <CountdownBar countdown={countdownView} compact={true} /> : null}
           <NewTrendsMini
             gs={gs}
             onOpenTrend={(t)=>setTrendModal(t)}
             onOpenRegional={(t)=>setRegionalModal(t)}
             onClose={()=>setMlTrendIntroOpen(false)}
           />
+          {countdownView ? <button className="primaryBtn big full" style={{marginTop:12}} onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button> : null}
         </SuperTopModal>
       ) : null}
 
@@ -2425,16 +2447,16 @@ function CardsPanel({ inv }){
   };
 
   const iconFor = (kind, item) => {
-    if(kind==="MINING_FARM") return "pickaxe";
+    if(kind==="MINING_FARM") return "⚙️";
     if(kind==="EXPERT"){
       const k = String(item?.functionKey||"");
-      if(k.includes("LAWYER")) return "shield";
-      if(k.includes("LOBBY") || k.includes("STEAL")) return "shuffle";
-      if(k.includes("ANALYST")) return "chartUp";
-      if(k.includes("CRYPTO")) return "btc";
-      return "crown";
+      if(k.includes("LAWYER")) return "⚖️";
+      if(k.includes("LOBBY") || k.includes("STEAL")) return "🕴️";
+      if(k.includes("ANALYST")) return "🔎";
+      if(k.includes("CRYPTO")) return "🧬";
+      return "🧑‍💼";
     }
-    return "receipt";
+    return "🃏";
   };
 
   return (
