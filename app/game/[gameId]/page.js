@@ -550,6 +550,7 @@ export default function GamePage(){
   const s = useMemo(()=> getSocket(), []);
   const [gs, setGs] = useState(null);
   const [countdownNow, setCountdownNow] = useState(Date.now());
+  const [connectionState, setConnectionState] = useState("connected");
   const [err, setErr] = useState("");
   const [tab, setTab] = useState(null);
   const [gmPanelOpen, setGmPanelOpen] = useState(false);
@@ -602,15 +603,38 @@ export default function GamePage(){
 
   useEffect(()=>{
     if(!gameId) return;
-    s.emit("watch_game", { gameId, playerId }, (res)=>{
-      if(!res?.ok) setErr(res?.error || "Nelze načíst hru.");
-    });
+    const watch = ()=>{
+      s.emit("watch_game", { gameId, playerId }, (res)=>{
+        if(!res?.ok) setErr(res?.error || "Nelze načíst hru.");
+      });
+    };
     const onState = (state)=>{
       if(state?.gameId!==gameId) return;
       setGs(state);
+      setConnectionState("connected");
     };
+    const onConnect = ()=>{ setConnectionState("connected"); watch(); };
+    const onDisconnect = ()=> setConnectionState("reconnecting");
+    const onReconnect = ()=>{ setConnectionState("connected"); watch(); };
+    const onVisibility = ()=>{
+      if(document.visibilityState === "visible"){
+        try{ if(!s.connected) s.connect(); }catch{}
+        watch();
+      }
+    };
+    watch();
     s.on("game_state", onState);
-    return ()=> s.off("game_state", onState);
+    s.on("connect", onConnect);
+    s.io.on("reconnect", onReconnect);
+    s.on("disconnect", onDisconnect);
+    document.addEventListener("visibilitychange", onVisibility);
+    return ()=>{
+      s.off("game_state", onState);
+      s.off("connect", onConnect);
+      s.off("disconnect", onDisconnect);
+      s.io.off("reconnect", onReconnect);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [gameId, playerId, s]);
 
   const me = gs?.players?.find(p=>p.playerId===playerId) || null;
@@ -768,9 +792,9 @@ export default function GamePage(){
   function gmNext(){ s.emit("gm_next", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
   function gmBack(){ s.emit("gm_back", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
 
-  // Readiness signal for GM button (GM is also counted as a player)
+  // Readiness signal for GM button (GM is NOT counted as a player)
   const readiness = useMemo(()=>{
-    const players = gs?.players || [];
+    const players = (gs?.players || []).filter(p=>p.role!=="GM");
     if(!players.length) return { ready:0, total:0, isGreen:false };
 
     const pidList = players.map(p=>p.playerId);
@@ -934,7 +958,7 @@ export default function GamePage(){
             ) : null}
           </div>
           <div className="topHeaderRight">
-            {/* intentionally empty: frees the top-right corner for GM and other critical controls */}
+            {connectionState!=="connected" ? <div className="connBadge">Obnovuji spojení…</div> : null}
           </div>
         </div>
         <PhaseBar phase={gs?.phase} bizStep={gs?.bizStep} />
@@ -997,6 +1021,17 @@ export default function GamePage(){
               </div>
             </div>
 
+            {gs?.rankings?.mlVisible && (gs.rankings.ml||[]).length>1 ? (
+              <div className="rankingBox">
+                <div className="rankingTitle">Pořadí nabídek</div>
+                <div className="rankingList">
+                  {(gs.rankings.ml||[]).map(r => (
+                    <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {/* golden rule: keep button styling (classes) identical; only change layout */}
             <div className="formRow stackConfirm">
               <input
@@ -1007,6 +1042,9 @@ export default function GamePage(){
                 value={mlBid}
                 onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))}
               />
+              <div className="quickAddRow">
+                <button className="secondaryBtn" type="button" onClick={()=>setMlBid(String((Number(mlBid||0)||0)+1000))}>+ 1 000 USD</button>
+              </div>
               <button className="primaryBtn big full" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
               <button className="secondaryBtn big full" onClick={()=>commitML(null)}>Nechci být ML</button>
             </div>
@@ -1208,6 +1246,17 @@ export default function GamePage(){
               </div>
             ) : null}
 
+            {gs?.rankings?.auctionVisible && (gs.rankings.auction||[]).length>1 ? (
+              <div className="rankingBox" style={{marginBottom:12}}>
+                <div className="rankingTitle">Pořadí nabídek</div>
+                <div className="rankingList">
+                  {(gs.rankings.auction||[]).map(r => (
+                    <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {!aucEntry?.committed ? (
               <>
                 <div className="formRow stackConfirm">
@@ -1219,6 +1268,9 @@ export default function GamePage(){
                     value={aucBid}
                     onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))}
                   />
+                  <div className="quickAddRow">
+                    <button className="secondaryBtn" type="button" onClick={()=>setAucBid(String((Number(aucBid||0)||0)+1000))}>+ 1 000 USD</button>
+                  </div>
                   <button className="primaryBtn big full" onClick={()=>commitAuction(aucBid===""?null:Number(aucBid), false)}>Potvrdit</button>
                 </div>
 
@@ -1244,22 +1296,23 @@ export default function GamePage(){
                   <div className="cardInner">
                     <div className="muted"><b>Lobbista</b> – vidíš výsledky 1. kola. Nyní zvol finální rozhodnutí.</div>
 
-                    <div className="auditTable" style={{marginTop:12}}>
-                      {(gs.players||[]).map(p=>{
-                        const e = gs.biz.auction.entries?.[p.playerId];
-                        const txt = e?.usedLobbyist ? "Použit Lobbista" : (e?.bidUsd==null ? "Nechci dražit" : `${e.bidUsd} USD`);
-                        return (
-                          <div key={p.playerId} className="auditRow">
-                            <div className="auditLbl">{p.name}</div>
-                            <div className="auditVal neu">{txt}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {gs?.rankings?.auctionVisible && (gs.rankings.auction||[]).length>1 ? (
+                      <div className="rankingBox" style={{marginTop:12}}>
+                        <div className="rankingTitle">Pořadí nabídek</div>
+                        <div className="rankingList">
+                          {(gs.rankings.auction||[]).map(r => (
+                            <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
 
-                    <div className="formRow" style={{marginTop:12}}>
+                    <div className="formRow stackConfirm" style={{marginTop:12}}>
                       <input className="inputBig" inputMode="numeric" placeholder="0" maxLength={8} value={aucFinalBid} onChange={(e)=>setAucFinalBid(e.target.value.replace(/[^\d]/g,""))} />
-                      <button className="primaryBtn big" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
+                      <div className="quickAddRow">
+                        <button className="secondaryBtn" type="button" onClick={()=>setAucFinalBid(String((Number(aucFinalBid||0)||0)+1000))}>+ 1 000 USD</button>
+                      </div>
+                      <button className="primaryBtn big full" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
                     </div>
                     <button className="secondaryBtn big full" onClick={()=>commitFinalAuction(null)} style={{marginTop:10}}>Nechci dražit</button>
                   </div>
@@ -1424,20 +1477,12 @@ export default function GamePage(){
                   </div>
 
                   <div className="auditBlock" style={{marginTop:12}}>
-                    <div className="auditHint">Veřejná částka vůči bance</div>
+                    <div className="auditHint">Stav auditu</div>
                     <div className="auditTable" style={{marginTop:8}}>
-                      {activePlayers.map(p=>{
-                        const publicEntry = gs?.settle?.entries?.[p.playerId];
-                        const val = Number(publicEntry?.settlementUsd || 0);
-                        return (
-                          <div key={p.playerId} className="auditRow">
-                            <div className="auditLbl">{p.name}</div>
-                            <div className={"auditVal "+(publicEntry?.committed ? (val>0?"pos":val<0?"neg":"neu") : "neu")}>
-                              {publicEntry?.committed ? `${val>=0?"+":""}${val} USD` : "Čeká se"}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      <div className="auditRow">
+                        <div className="auditLbl">Ostatní hráči</div>
+                        <div className="auditVal neu">Čeká se na audit ostatních hráčů</div>
+                      </div>
                     </div>
                   </div>
 
