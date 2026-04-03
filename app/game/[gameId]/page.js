@@ -868,11 +868,9 @@ export default function GamePage(){
         <div className="topHeaderRow">
           <div>
             <div className="brand">KRYPTOPOLY</div>
-            {gs?.year ? (
+            {gs?.year && (
               <div className="brandSub">Rok {gs.year} — Základní cena {getBasePriceForYear(gs.year)} USD</div>
-              {kind===undefined?null:null}
-            </>
-            ) : null}
+            )}
           </div>
           <div className="topHeaderRight">
             {/* intentionally empty: frees the top-right corner for GM and other critical controls */}
@@ -1192,7 +1190,20 @@ export default function GamePage(){
                     <button className="secondaryBtn big full" onClick={()=>commitFinalAuction(null)} style={{marginTop:10}}>Nechci dražit</button>
                   </div>
                 ) : (
-                  <div className="muted">Obálka odeslána. (Telefon je skrytý – můžeš odkryt ručně.)</div>{gs?.biz?.auction?.rankingVisible ? <div className="rankingBox"><div className="secTitle">Pořadí nabídek</div>{(gs?.biz?.auction?.ranking||[]).map(r=><div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}</div> : null}
+                  <>
+                    <div className="muted">Obálka odeslána. (Telefon je skrytý – můžeš odkryt ručně.)</div>
+                    {gs?.biz?.auction?.rankingVisible ? (
+                      <div className="rankingBox">
+                        <div className="secTitle">Pořadí nabídek</div>
+                        {(gs?.biz?.auction?.ranking || []).map((r) => (
+                          <div key={r.playerId} className="rankingRow">
+                            <span>{r.rank}.</span>
+                            <span>{r.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </>
             )}
