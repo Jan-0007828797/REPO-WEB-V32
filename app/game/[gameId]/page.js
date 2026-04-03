@@ -87,36 +87,12 @@ function MonoIcon({ name, size=28, className="" }){
       </svg>
     );
   }
-  if(name==="scan"){
+  if(name==="camera"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M18 26V18h8" />
-        <path d="M46 26V18h-8" />
-        <path d="M18 38v8h8" />
-        <path d="M46 38v8h-8" />
-        <path d="M26 24h12" />
-        <path d="M24 32h16" />
-        <path d="M28 40h8" />
-      </svg>
-    );
-  }
-  if(name==="gavel"){
-    return (
-      <svg {...common} className={className} aria-hidden="true">
-        <path d="M20 20l12 12" />
-        <path d="M26 14l12 12" />
-        <path d="M18 34l12 12" />
-        <path d="M36 42l10 10" />
-        <path d="M14 50h22" />
-      </svg>
-    );
-  }
-  if(name==="coins"){
-    return (
-      <svg {...common} className={className} aria-hidden="true">
-        <ellipse cx="32" cy="18" rx="14" ry="6" />
-        <path d="M18 18v20c0 3 6 6 14 6s14-3 14-6V18" />
-        <path d="M18 28c0 3 6 6 14 6s14-3 14-6" />
+        <path d="M20 20l4-6h16l4 6" />
+        <rect x="12" y="20" width="40" height="30" rx="8" />
+        <circle cx="32" cy="35" r="9" />
       </svg>
     );
   }
@@ -426,8 +402,8 @@ function regionalTrendIconName(t){
 
 function badgeFor(kind){
   if(kind==="ML") return { icon:"crown", label:"MARKET LEADER" };
-  if(kind==="AUCTION") return { icon:"gavel", label:"DRAŽBA – OBÁLKA" };
-  if(kind==="CRYPTO") return { icon:"coins", label:"KRYPTOTRANSAKCE" };
+  if(kind==="AUCTION") return { icon:"envelope", label:"DRAŽBA – OBÁLKA" };
+  if(kind==="CRYPTO") return { icon:"btc", label:"KRYPTOTRANSAKCE" };
   if(kind==="SETTLE") return { icon:"receipt", label:"AUDIT" };
   return { icon:null, label:"" };
 }
@@ -438,9 +414,9 @@ function PhaseBar({ phase, bizStep }){
   const phases = [
     { key:"ML_BID", label:"Market Leader", icon:"crown" },
     { key:"MOVE", label:"Výběr trhu", icon:"pin" },
-    { key:"AUCTION_ENVELOPE", label:"Dražba", icon:"gavel" },
-    { key:"ACQUIRE", label:"Akvizice", icon:"scan" },
-    { key:"CRYPTO", label:"Kryptoburza", icon:"coins" },
+    { key:"AUCTION_ENVELOPE", label:"Dražba", icon:"envelope" },
+    { key:"ACQUIRE", label:"Akvizice", icon:"camera" },
+    { key:"CRYPTO", label:"Kryptoburza", icon:"btc" },
     { key:"SETTLE", label:"Audit", icon:"receipt" },
   ];
 
@@ -480,7 +456,7 @@ function PhaseBar({ phase, bizStep }){
   );
 }
 
-function PrivacyCard({ kind, mode, amountText, onReveal, onHide, extraContent }){
+function PrivacyCard({ kind, mode, amountText, onReveal, onHide }){
   const b = badgeFor(kind);
   if(mode==="edit") return null;
   return (
@@ -502,7 +478,6 @@ function PrivacyCard({ kind, mode, amountText, onReveal, onHide, extraContent })
             <button className="secondaryBtn big full" onClick={onHide}>SKRÝT</button>
           </>
         )}
-        {extraContent ? <div style={{marginTop:12, width:"100%"}}>{extraContent}</div> : null}
       </div>
     </div>
   );
@@ -564,60 +539,37 @@ export default function GamePage(){
   // Acquisition (scan) UI
   const [scanOn, setScanOn] = useState(false);
   const [scanErr, setScanErr] = useState("");
+  const [countdownNow, setCountdownNow] = useState(Date.now());
   const [scanPreview, setScanPreview] = useState(null); // {card}
   const [acqMoreOpen, setAcqMoreOpen] = useState(false);
   const [acqHadAny, setAcqHadAny] = useState(false);
   const [acqNoScanLocal, setAcqNoScanLocal] = useState(false); // instant UX feedback
-  const [connectionState, setConnectionState] = useState("connected");
-  const [countdownNow, setCountdownNow] = useState(Date.now());
   const videoRef = useRef(null);
   const codeReader = useMemo(()=> new BrowserMultiFormatReader(), []);
 
   useEffect(()=>{
     if(!gameId) return;
-
-    const watch = () => {
+    const watch = ()=>{
       s.emit("watch_game", { gameId, playerId }, (res)=>{
         if(!res?.ok) setErr(res?.error || "Nelze načíst hru.");
       });
     };
-
+    watch();
     const onState = (state)=>{
       if(state?.gameId!==gameId) return;
       setGs(state);
-      setConnectionState("connected");
     };
-    const onConnect = ()=>{
-      setConnectionState("connected");
-      watch();
-    };
-    const onDisconnect = ()=> setConnectionState("reconnecting");
-    const onReconnect = ()=>{
-      setConnectionState("connected");
-      watch();
-    };
-    const onVisibility = ()=>{
-      if(document.visibilityState === "visible"){
-        try{ if(!s.connected) s.connect(); }catch{}
-        watch();
-      }
-    };
-
-    watch();
+    const onConnect = ()=> watch();
+    const onVisible = ()=>{ if(document.visibilityState === "visible") watch(); };
     s.on("game_state", onState);
     s.on("connect", onConnect);
-    s.io?.on?.("reconnect", onReconnect);
-    s.on("disconnect", onDisconnect);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return ()=> {
+    document.addEventListener("visibilitychange", onVisible);
+    return ()=>{
       s.off("game_state", onState);
       s.off("connect", onConnect);
-      s.io?.off?.("reconnect", onReconnect);
-      s.off("disconnect", onDisconnect);
-      document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [gameId, playerId, s]);
+  }, [gameId, playerId]);
 
   const me = gs?.players?.find(p=>p.playerId===playerId) || null;
   const isGM = me?.role==="GM";
@@ -650,6 +602,11 @@ export default function GamePage(){
       }
     }
   }, [gs, playerId]);
+
+  useEffect(()=>{
+    const t = setInterval(()=>setCountdownNow(Date.now()), 250);
+    return ()=>clearInterval(t);
+  }, []);
 
   // Load preview when entering SETTLE and not yet committed
   useEffect(()=>{
@@ -703,13 +660,6 @@ export default function GamePage(){
       setAuditPopupRevealed(false);
     }
   }, [gs?.phase]);
-
-  useEffect(()=>{
-    const active = !!gs?.meta?.countdown?.active;
-    if(!active) return;
-    const timer = setInterval(()=> setCountdownNow(Date.now()), 250);
-    return ()=> clearInterval(timer);
-  }, [gs?.meta?.countdown?.active, gs?.meta?.countdown?.endsAt]);
 
   // Acquisition scanner lifecycle
   useEffect(()=>{
@@ -781,65 +731,11 @@ export default function GamePage(){
   function gmNext(){ s.emit("gm_next", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
   function gmBack(){ s.emit("gm_back", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
 
-  // Readiness for action phases counts only real players; GM badge presence is separate.
-  const readiness = useMemo(()=>{
-    const metaReady = gs?.meta?.readiness;
-    if(metaReady && Number.isFinite(Number(metaReady.total))){
-      return {
-        ready: Number(metaReady.ready || 0),
-        total: Number(metaReady.total || 0),
-        isGreen: !!metaReady.isGreen
-      };
-    }
-    const players = (gs?.players || []).filter(p=>p.role!=="GM");
-    if(!players.length) return { ready:0, total:0, isGreen:false };
-    const pidList = players.map(p=>p.playerId);
-    const phase = gs?.phase;
-    const step = gs?.bizStep;
-    function committedFor(pid){
-      if(phase==="BIZ" && step==="ML_BID") return !!gs?.biz?.mlBids?.[pid]?.committed;
-      if(phase==="BIZ" && step==="MOVE") return !!gs?.biz?.move?.[pid]?.committed;
-      if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){
-        const e = gs?.biz?.auction?.entries?.[pid];
-        if(!gs?.biz?.auction?.lobbyistPhaseActive) return !!e?.committed;
-        if(!e?.usedLobbyist) return true;
-        return !!e?.finalCommitted;
-      }
-      if(phase==="CRYPTO") return !!gs?.crypto?.entries?.[pid]?.committed;
-      if(phase==="SETTLE") return !!gs?.settle?.entries?.[pid]?.committed;
-      return false;
-    }
-    let totalIds = pidList;
-    if(phase==="BIZ" && step==="AUCTION_ENVELOPE" && gs?.biz?.auction?.lobbyistPhaseActive){
-      const entries = gs?.biz?.auction?.entries || {};
-      totalIds = pidList.filter(pid=>!!entries[pid]?.usedLobbyist);
-      if(totalIds.length===0) totalIds = pidList;
-    }
-    const ready = totalIds.filter(pid=>committedFor(pid)).length;
-    const total = totalIds.length;
-    return { ready, total, isGreen: total>0 && ready===total };
-  }, [gs]);
+  // Readiness signal is server-authoritative.
+  const readiness = gs?.meta?.readiness || { ready:0, total:(gs?.players||[]).length, isGreen:false };
+  const countdown = gs?.meta?.countdown || { active:false, remainingMs:0, endsAt:null };
+  const countdownMs = countdown.active ? Math.max(0, Number(countdown.endsAt||0) - countdownNow) : 0;
 
-  const gmBadge = useMemo(()=>{
-    const metaReady = gs?.meta?.readiness;
-    if(metaReady && Number.isFinite(Number(metaReady.total))){
-      return {
-        ready: Number(metaReady.ready || 0),
-        total: Number(metaReady.total || 0),
-        isGreen: !!metaReady.isGreen
-      };
-    }
-    return readiness;
-  }, [gs, readiness]);
-
-  const countdown = useMemo(()=>{
-    const meta = gs?.meta?.countdown;
-    if(!meta?.active || !meta?.endsAt) return { active:false, seconds:45, tone:"normal" };
-    const ms = Math.max(0, Number(meta.endsAt) - countdownNow);
-    const seconds = Math.ceil(ms / 1000);
-    const tone = seconds <= 10 ? "critical" : seconds <= 20 ? "warning" : "normal";
-    return { active:true, seconds, tone, key: meta.key };
-  }, [gs?.meta?.countdown, countdownNow]);
 
   function commitML(amount){
     s.emit("commit_ml_bid", { gameId, playerId, amountUsd: amount }, (res)=>{
@@ -961,12 +857,18 @@ export default function GamePage(){
         <PhaseBar phase={gs?.phase} bizStep={gs?.bizStep} />
       </div>
 
+      {countdown.active ? (
+        <div className="countdownBar">
+          <div className={"countdownPill "+(countdownMs<=10000?"danger":countdownMs<=20000?"warn":"normal")}>⏱ {String(Math.ceil(countdownMs/1000)).padStart(2, "0")} s</div>
+        </div>
+      ) : null}
+
       {isGM && gs?.status==="IN_PROGRESS" ? (
         <div className="gmFabFixed">
           <button
-            className={"gmFab "+(gmBadge.isGreen?"gmGreen":"gmRed")}
+            className={"gmFab "+(readiness.isGreen?"gmGreen":"gmRed")}
             onClick={()=>{
-              if(readiness.total>0 && readiness.isGreen){
+              if(readiness.isGreen){
                 gmNext();
               }else{
                 setGmPanelOpen(true);
@@ -974,18 +876,11 @@ export default function GamePage(){
             }}
             aria-label="GM – další fáze"
           >
-            GM <span className="gmCount">{gmBadge.ready}/{gmBadge.total}</span>
+            GM <span className="gmCount">{readiness.ready}/{readiness.total}</span>
           </button>
         </div>
       ) : null}
 
-      {countdown.active ? (
-        <div className={"countdownBar "+countdown.tone}>
-          <span className="countdownLabel">⏱ {String(countdown.seconds).padStart(2,"0")} s</span>
-        </div>
-      ) : null}
-
-      {connectionState!=="connected" ? <div className="connectionBanner">Obnovuji spojení…</div> : null}
       {err ? <div className="toast" onClick={()=>setErr("")}>{err}</div> : null}
 
       <div className="content">
@@ -1009,14 +904,6 @@ export default function GamePage(){
             </div>
 
             {/* golden rule: keep button styling (classes) identical; only change layout */}
-            {gs?.biz?.mlRankingVisible && (gs?.biz?.mlRanking||[]).length ? (
-              <div className="rankingBox">
-                <div className="rankingTitle">Pořadí nabídek</div>
-                {(gs.biz.mlRanking||[]).map(r => (
-                  <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
-                ))}
-              </div>
-            ) : null}
             <div className="formRow stackConfirm">
               <input
                 className="inputBig"
@@ -1026,12 +913,15 @@ export default function GamePage(){
                 value={mlBid}
                 onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))}
               />
-              <div className="quickAddRow">
-                <button className="ghostBtn" onClick={()=>setMlBid(String((Number(mlBid||0)||0)+1000))}>+ 1 000 USD</button>
+              <div className="quickAdds">
+                <button className="secondaryBtn" onClick={()=>setMlBid(String((Number(mlBid||0)||0)+1000))}>+ 1 000 USD</button>
               </div>
               <button className="primaryBtn big full" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
               <button className="secondaryBtn big full" onClick={()=>commitML(null)}>Nechci být ML</button>
             </div>
+            {gs?.biz?.mlRankingVisible ? (
+              <div className="rankingBox"><div className="secTitle">Pořadí nabídek</div>{(gs?.biz?.mlRanking||[]).map(r=><div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}</div>
+            ) : null}
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="MOVE" ? (
           <div className="card phaseCard">
@@ -1210,7 +1100,7 @@ export default function GamePage(){
           <div className="card phaseCard">
             <div className="phaseHeader">
               <div className="phaseLeft">
-                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="gavel" size={48} /></div>
+                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="envelope" size={48} /></div>
                 <div>
                   <div className="phaseTitle">Dražba – obálka</div>
                   <div className="phaseSub">Zadej nabídku v USD, nebo zvol neúčast. Pokud máš lobbistu, můžeš získat „poslední šanci“.</div>
@@ -1230,14 +1120,6 @@ export default function GamePage(){
               </div>
             ) : null}
 
-            {gs?.biz?.auction?.rankingVisible && (gs?.biz?.auction?.ranking||[]).length ? (
-              <div className="rankingBox">
-                <div className="rankingTitle">Pořadí nabídek</div>
-                {(gs.biz.auction.ranking||[]).map(r => (
-                  <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
-                ))}
-              </div>
-            ) : null}
             {!aucEntry?.committed ? (
               <>
                 <div className="formRow stackConfirm">
@@ -1249,8 +1131,8 @@ export default function GamePage(){
                     value={aucBid}
                     onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))}
                   />
-                  <div className="quickAddRow">
-                    <button className="ghostBtn" onClick={()=>setAucBid(String((Number(aucBid||0)||0)+1000))}>+ 1 000 USD</button>
+                  <div className="quickAdds">
+                    <button className="secondaryBtn" onClick={()=>setAucBid(String((Number(aucBid||0)||0)+1000))}>+ 1 000 USD</button>
                   </div>
                   <button className="primaryBtn big full" onClick={()=>commitAuction(aucBid===""?null:Number(aucBid), false)}>Potvrdit</button>
                 </div>
@@ -1290,17 +1172,14 @@ export default function GamePage(){
                       })}
                     </div>
 
-                    <div className="formRow stackConfirm" style={{marginTop:12}}>
+                    <div className="formRow" style={{marginTop:12}}>
                       <input className="inputBig" inputMode="numeric" placeholder="0" maxLength={8} value={aucFinalBid} onChange={(e)=>setAucFinalBid(e.target.value.replace(/[^\d]/g,""))} />
-                      <div className="quickAddRow">
-                        <button className="ghostBtn" onClick={()=>setAucFinalBid(String((Number(aucFinalBid||0)||0)+1000))}>+ 1 000 USD</button>
-                      </div>
-                      <button className="primaryBtn big full" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
+                      <button className="primaryBtn big" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
                     </div>
                     <button className="secondaryBtn big full" onClick={()=>commitFinalAuction(null)} style={{marginTop:10}}>Nechci dražit</button>
                   </div>
                 ) : (
-                  <div className="muted">Obálka odeslána. (Telefon je skrytý – můžeš odkryt ručně.)</div>
+                  <><div className="muted">Obálka odeslána. (Telefon je skrytý – můžeš odkryt ručně.)</div>{gs?.biz?.auction?.rankingVisible ? <div className="rankingBox"><div className="secTitle">Pořadí nabídek</div>{(gs?.biz?.auction?.ranking||[]).map(r=><div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}</div> : null}</>
                 )}
               </>
             )}
@@ -1309,7 +1188,7 @@ export default function GamePage(){
           <div className="card phaseCard">
             <div className="phaseHeader">
               <div className="phaseLeft">
-                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="scan" size={48} /></div>
+                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="camera" size={48} /></div>
                 <div>
                   <div className="phaseTitle">Akvizice</div>
                   <div className="phaseSub">Definitivně potvrď, zda jsi získal kartu. Pokud ano, naskenuj QR kód (můžeš vícekrát).</div>
@@ -1345,7 +1224,7 @@ export default function GamePage(){
           <div className="card phaseCard">
             <div className="phaseHeader">
               <div className="phaseLeft">
-                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="coins" size={48} /></div>
+                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="btc" size={48} /></div>
                 <div>
                   <div className="phaseTitle">Kryptoburza</div>
                   <div className="phaseSub">Naklikej změny v kusech. Pak potvrď. Ukazovací režim skryje detaily.</div>
@@ -1426,7 +1305,7 @@ export default function GamePage(){
             {(() => {
               const entry = gs?.settle?.entries?.[playerId];
               const committed = !!entry?.committed;
-              const activePlayers = (gs?.players||[]).filter(p=>p.role!=="GM");
+              const activePlayers = (gs?.players||[]);
               const allCommitted = activePlayers.length ? activePlayers.every(p=>gs?.settle?.entries?.[p.playerId]?.committed) : false;
               const view = committed ? entry : auditPreview;
               const sum = view?.settlementUsd;
@@ -1459,16 +1338,9 @@ export default function GamePage(){
                     )}
                   </div>
 
-                  <div className="auditBlock" style={{marginTop:12}}>
-                    <div className="auditHint">Stav auditu</div>
-                    <div className="muted" style={{marginTop:8}}>
-                      {allCommitted ? "Všichni hráči dokončili audit." : "Čeká se na audit ostatních hráčů."}
-                    </div>
-                  </div>
+                  <div className="auditBlock" style={{marginTop:12}}><div className="auditHint">Po potvrzení auditu se zobrazí pouze tvoje důvěrné vyúčtování. Stav ostatních hráčů zůstává skrytý.</div></div>
 
-                  {!committed ? (
-                    <div className="ctaRow">
-                      <button className="primaryBtn big full" onClick={commitSettle}>Zahájit audit</button>
+                  <button className="primaryBtn big full" onClick={commitSettle}>Zahájit audit</button>
                       {usable.length ? (
                         <button className="secondaryBtn big full" onClick={()=>setExpertsOpen(true)}>Povolat experty</button>
                       ) : null}
@@ -1644,12 +1516,6 @@ export default function GamePage(){
         amountText={(mlAmount==null) ? "NECHCI" : `${mlAmount} USD`}
         onReveal={()=>setMlPrivacy("reveal")}
         onHide={()=>setMlPrivacy("hidden")}
-        extraContent={gs?.biz?.mlRankingVisible ? (
-          <div className="rankingBox">
-            <div className="rankingTitle">Pořadí nabídek</div>
-            {(gs?.biz?.mlRanking||[]).map(r => <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}
-          </div>
-        ) : null}
       />
       <PrivacyCard
         kind="AUCTION"
@@ -1662,12 +1528,6 @@ export default function GamePage(){
         amountText={(aucShownBid==null) ? "NECHCI" : `${aucShownBid} USD`}
         onReveal={()=>setAucPrivacy("reveal")}
         onHide={()=>setAucPrivacy("hidden")}
-        extraContent={gs?.biz?.auction?.rankingVisible ? (
-          <div className="rankingBox">
-            <div className="rankingTitle">Pořadí nabídek</div>
-            {(gs?.biz?.auction?.ranking||[]).map(r => <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}
-          </div>
-        ) : null}
       />
       <PrivacyCard
         kind="CRYPTO"
@@ -1702,7 +1562,7 @@ export default function GamePage(){
           {(() => {
             const entry = gs?.settle?.entries?.[playerId];
             const committed = !!entry?.committed;
-            const activePlayers = (gs?.players||[]).filter(p=>p.role!=="GM");
+            const activePlayers = (gs?.players||[]);
             const allCommitted = activePlayers.length ? activePlayers.every(p=>gs?.settle?.entries?.[p.playerId]?.committed) : false;
 
             const canReveal = allCommitted;
@@ -1818,7 +1678,7 @@ export default function GamePage(){
           {(() => {
             const inv = gs?.inventory?.[playerId] || { experts:[] };
             const usable = (inv.experts||[]).filter(e=>!e.used && (e.functionKey==="STEAL_BASE_PROD" || e.functionKey==="LAWYER_TRENDS"));
-            const others = (gs?.players||[]).filter(p=>p.playerId!==playerId && p.role!=="GM");
+            const others = (gs?.players||[]).filter(p=>p.playerId!==playerId);
 
             function applyLobbyist(action){
               s.emit("apply_audit_lobbyist", { gameId, playerId, action, targetPlayerId: expertTarget }, (res)=>{
@@ -1920,20 +1780,13 @@ export default function GamePage(){
           onClose={()=>setMlTrendIntroOpen(false)}
           hideClose={true}
         >
-          {countdown.active ? (
-            <div className={"countdownInline "+countdown.tone}>
-              <div><b>Čas běží:</b> {String(countdown.seconds).padStart(2,"0")} s</div>
-              <button className="ghostBtn" onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button>
-            </div>
-          ) : null}
-          {countdown.active ? <div className={"countdownInline "+countdown.tone}>⏱ {String(countdown.seconds).padStart(2,"0")} s</div> : null}
           <NewTrendsMini
             gs={gs}
             onOpenTrend={(t)=>setTrendModal(t)}
             onOpenRegional={(t)=>setRegionalModal(t)}
             onClose={()=>setMlTrendIntroOpen(false)}
           />
-          {countdown.active ? <button className="primaryBtn full" style={{marginTop:12}} onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button> : null}
+          {countdown.active ? <div className="countdownInside"><div className="countdownHint">Čas běží</div><div className="countdownInline">⏱ {String(Math.ceil(countdownMs/1000)).padStart(2, "0")} s</div><button className="primaryBtn full" onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button></div> : null}
         </SuperTopModal>
       ) : null}
 
