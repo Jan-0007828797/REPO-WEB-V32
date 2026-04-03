@@ -90,33 +90,29 @@ function MonoIcon({ name, size=28, className="" }){
   if(name==="scan"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M18 26V18h8" />
-        <path d="M46 26V18h-8" />
-        <path d="M18 38v8h8" />
-        <path d="M46 38v8h-8" />
-        <path d="M26 24h12" />
-        <path d="M24 32h16" />
-        <path d="M28 40h8" />
+        <path d="M18 10h10" /><path d="M10 18V10h8" />
+        <path d="M46 10h8v8" /><path d="M54 18V10h-10" />
+        <path d="M10 46v8h8" /><path d="M18 54H10v-10" />
+        <path d="M54 46v8H46" /><path d="M46 54h8V44" />
+        <path d="M24 24h16v16H24z" />
       </svg>
     );
   }
   if(name==="gavel"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M20 20l12 12" />
-        <path d="M26 14l12 12" />
-        <path d="M18 34l12 12" />
-        <path d="M36 42l10 10" />
-        <path d="M14 50h22" />
+        <path d="M18 24l10-10 8 8-10 10z" />
+        <path d="M31 27l15 15" />
+        <path d="M20 50h24" />
       </svg>
     );
   }
   if(name==="coins"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <ellipse cx="32" cy="18" rx="14" ry="6" />
-        <path d="M18 18v20c0 3 6 6 14 6s14-3 14-6V18" />
-        <path d="M18 28c0 3 6 6 14 6s14-3 14-6" />
+        <ellipse cx="32" cy="18" rx="12" ry="6" />
+        <path d="M20 18v12c0 3 5 6 12 6s12-3 12-6V18" />
+        <path d="M20 30v12c0 3 5 6 12 6s12-3 12-6V30" />
       </svg>
     );
   }
@@ -480,7 +476,7 @@ function PhaseBar({ phase, bizStep }){
   );
 }
 
-function PrivacyCard({ kind, mode, amountText, onReveal, onHide, extraContent }){
+function PrivacyCard({ kind, mode, amountText, onReveal, onHide, ranking=[] }){
   const b = badgeFor(kind);
   if(mode==="edit") return null;
   return (
@@ -495,6 +491,7 @@ function PrivacyCard({ kind, mode, amountText, onReveal, onHide, extraContent })
           <>
             <div className="privacyHidden">🔒</div>
             <button className="primaryBtn big full" onClick={onReveal}>ODKRÝT</button>
+            {ranking?.length ? <div className="rankingBox"><div className="secTitle">Pořadí nabídek</div>{ranking.map(r=><div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}</div> : null}
           </>
         ) : (
           <>
@@ -502,7 +499,6 @@ function PrivacyCard({ kind, mode, amountText, onReveal, onHide, extraContent })
             <button className="secondaryBtn big full" onClick={onHide}>SKRÝT</button>
           </>
         )}
-        {extraContent ? <div style={{marginTop:12, width:"100%"}}>{extraContent}</div> : null}
       </div>
     </div>
   );
@@ -568,59 +564,39 @@ export default function GamePage(){
   const [acqMoreOpen, setAcqMoreOpen] = useState(false);
   const [acqHadAny, setAcqHadAny] = useState(false);
   const [acqNoScanLocal, setAcqNoScanLocal] = useState(false); // instant UX feedback
-  const [connectionState, setConnectionState] = useState("connected");
-  const [countdownNow, setCountdownNow] = useState(Date.now());
   const videoRef = useRef(null);
   const codeReader = useMemo(()=> new BrowserMultiFormatReader(), []);
 
   useEffect(()=>{
     if(!gameId) return;
-
-    const watch = () => {
+    const watch = ()=>{
       s.emit("watch_game", { gameId, playerId }, (res)=>{
         if(!res?.ok) setErr(res?.error || "Nelze načíst hru.");
       });
     };
-
+    watch();
     const onState = (state)=>{
       if(state?.gameId!==gameId) return;
       setGs(state);
-      setConnectionState("connected");
     };
-    const onConnect = ()=>{
-      setConnectionState("connected");
-      watch();
-    };
-    const onDisconnect = ()=> setConnectionState("reconnecting");
-    const onReconnect = ()=>{
-      setConnectionState("connected");
-      watch();
-    };
-    const onVisibility = ()=>{
-      if(document.visibilityState === "visible"){
-        try{ if(!s.connected) s.connect(); }catch{}
-        watch();
-      }
-    };
-
-    watch();
+    const onConnect = ()=> watch();
+    const onVisibility = ()=>{ if(document.visibilityState==='visible') watch(); };
     s.on("game_state", onState);
     s.on("connect", onConnect);
-    s.io?.on?.("reconnect", onReconnect);
-    s.on("disconnect", onDisconnect);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return ()=> {
+    document.addEventListener('visibilitychange', onVisibility);
+    return ()=>{
       s.off("game_state", onState);
       s.off("connect", onConnect);
-      s.io?.off?.("reconnect", onReconnect);
-      s.off("disconnect", onDisconnect);
-      document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [gameId, playerId, s]);
 
   const me = gs?.players?.find(p=>p.playerId===playerId) || null;
   const isGM = me?.role==="GM";
+  const readiness = gs?.meta?.readiness || { ready:0, total:0, isGreen:false };
+  const gmBadge = gs?.meta?.gmBadge || readiness;
+  const countdownMeta = gs?.meta?.countdown || { active:false, endsAt:null, phaseKey:null };
+  const [countdownNow, setCountdownNow] = useState(Date.now());
 
   const uiLocked = (gs?.phase==="BIZ" && gs?.bizStep==="MOVE" && !!gs?.biz?.move?.[playerId]?.committed);
   const setTabSafe = (t)=>{ if(!uiLocked) setTab(t); };
@@ -704,13 +680,6 @@ export default function GamePage(){
     }
   }, [gs?.phase]);
 
-  useEffect(()=>{
-    const active = !!gs?.meta?.countdown?.active;
-    if(!active) return;
-    const timer = setInterval(()=> setCountdownNow(Date.now()), 250);
-    return ()=> clearInterval(timer);
-  }, [gs?.meta?.countdown?.active, gs?.meta?.countdown?.endsAt]);
-
   // Acquisition scanner lifecycle
   useEffect(()=>{
     const phase = gs?.phase;
@@ -781,59 +750,14 @@ export default function GamePage(){
   function gmNext(){ s.emit("gm_next", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
   function gmBack(){ s.emit("gm_back", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
 
-  // Readiness for action phases counts only real players; GM badge presence is separate.
-  const readiness = useMemo(()=>{
-    const players = (gs?.players || []).filter(p=>p.role!=="GM");
-    if(!players.length) return { ready:0, total:0, isGreen:false };
 
-    const pidList = players.map(p=>p.playerId);
-    const phase = gs?.phase;
-    const step = gs?.bizStep;
+  useEffect(()=>{
+    if(!countdownMeta?.active) return;
+    const t = setInterval(()=>setCountdownNow(Date.now()), 250);
+    return ()=>clearInterval(t);
+  }, [countdownMeta?.active, countdownMeta?.endsAt]);
 
-    function committedFor(pid){
-      if(phase==="BIZ" && step==="ML_BID") return !!gs?.biz?.mlBids?.[pid]?.committed;
-      if(phase==="BIZ" && step==="MOVE") return !!gs?.biz?.move?.[pid]?.committed;
-      if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){
-        const e = gs?.biz?.auction?.entries?.[pid];
-        if(!gs?.biz?.auction?.lobbyistPhaseActive) return !!e?.committed;
-        if(!e?.usedLobbyist) return true;
-        return !!e?.finalCommitted;
-      }
-      if(phase==="CRYPTO") return !!gs?.crypto?.entries?.[pid]?.committed;
-      if(phase==="SETTLE") return !!gs?.settle?.entries?.[pid]?.committed;
-      return false;
-    }
-
-    let totalIds = pidList;
-    if(phase==="BIZ" && step==="AUCTION_ENVELOPE" && gs?.biz?.auction?.lobbyistPhaseActive){
-      const entries = gs?.biz?.auction?.entries || {};
-      totalIds = pidList.filter(pid=>!!entries[pid]?.usedLobbyist);
-    }
-
-    const ready = totalIds.filter(pid=>committedFor(pid)).length;
-    const total = totalIds.length;
-    return { ready, total, isGreen: total>0 && ready===total };
-  }, [gs]);
-
-  const gmBadge = useMemo(()=>{
-    const presenceConnected = Number(gs?.meta?.presence?.connected || 0);
-    const presenceTotal = Number(gs?.meta?.presence?.total || 0);
-    const noMlCommitYet = gs?.phase==="BIZ" && gs?.bizStep==="ML_BID" && !(gs?.players||[]).some(p=>p.role!=="GM" && gs?.biz?.mlBids?.[p.playerId]?.committed);
-    const showPresence = (gs?.phase==="BIZ" && gs?.bizStep==="ML_BID" && (mlTrendIntroOpen || noMlCommitYet)) || readiness.total===0;
-    if(showPresence){
-      return { ready: presenceConnected, total: presenceTotal, isGreen: presenceTotal>0 && presenceConnected===presenceTotal };
-    }
-    return { ready: readiness.ready, total: readiness.total, isGreen: readiness.isGreen };
-  }, [gs, readiness, mlTrendIntroOpen]);
-
-  const countdown = useMemo(()=>{
-    const meta = gs?.meta?.countdown;
-    if(!meta?.active || !meta?.endsAt) return { active:false, seconds:45, tone:"normal" };
-    const ms = Math.max(0, Number(meta.endsAt) - countdownNow);
-    const seconds = Math.ceil(ms / 1000);
-    const tone = seconds <= 10 ? "critical" : seconds <= 20 ? "warning" : "normal";
-    return { active:true, seconds, tone, key: meta.key };
-  }, [gs?.meta?.countdown, countdownNow]);
+  const countdownRemaining = countdownMeta?.active ? Math.max(0, Math.ceil((Number(countdownMeta.endsAt||0) - countdownNow)/1000)) : 0;
 
   function commitML(amount){
     s.emit("commit_ml_bid", { gameId, playerId, amountUsd: amount }, (res)=>{
@@ -946,6 +870,8 @@ export default function GamePage(){
             <div className="brand">KRYPTOPOLY</div>
             {gs?.year ? (
               <div className="brandSub">Rok {gs.year} — Základní cena {getBasePriceForYear(gs.year)} USD</div>
+              {kind===undefined?null:null}
+            </>
             ) : null}
           </div>
           <div className="topHeaderRight">
@@ -953,6 +879,7 @@ export default function GamePage(){
           </div>
         </div>
         <PhaseBar phase={gs?.phase} bizStep={gs?.bizStep} />
+        {countdownMeta?.active ? <div className="countdownBanner">⏱ {String(Math.floor(countdownRemaining/60)).padStart(2,"0")}:{String(countdownRemaining%60).padStart(2,"0")}</div> : null}
       </div>
 
       {isGM && gs?.status==="IN_PROGRESS" ? (
@@ -960,7 +887,7 @@ export default function GamePage(){
           <button
             className={"gmFab "+(gmBadge.isGreen?"gmGreen":"gmRed")}
             onClick={()=>{
-              if(readiness.total>0 && readiness.isGreen){
+              if(readiness.isGreen){
                 gmNext();
               }else{
                 setGmPanelOpen(true);
@@ -973,13 +900,6 @@ export default function GamePage(){
         </div>
       ) : null}
 
-      {countdown.active ? (
-        <div className={"countdownBar "+countdown.tone}>
-          <span className="countdownLabel">⏱ {String(countdown.seconds).padStart(2,"0")} s</span>
-        </div>
-      ) : null}
-
-      {connectionState!=="connected" ? <div className="connectionBanner">Obnovuji spojení…</div> : null}
       {err ? <div className="toast" onClick={()=>setErr("")}>{err}</div> : null}
 
       <div className="content">
@@ -1003,14 +923,6 @@ export default function GamePage(){
             </div>
 
             {/* golden rule: keep button styling (classes) identical; only change layout */}
-            {gs?.biz?.mlRankingVisible && (gs?.biz?.mlRanking||[]).length ? (
-              <div className="rankingBox">
-                <div className="rankingTitle">Pořadí nabídek</div>
-                {(gs.biz.mlRanking||[]).map(r => (
-                  <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
-                ))}
-              </div>
-            ) : null}
             <div className="formRow stackConfirm">
               <input
                 className="inputBig"
@@ -1020,11 +932,9 @@ export default function GamePage(){
                 value={mlBid}
                 onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))}
               />
-              <div className="quickAddRow">
-                <button className="ghostBtn" onClick={()=>setMlBid(String((Number(mlBid||0)||0)+1000))}>+ 1 000 USD</button>
-              </div>
-              <button className="primaryBtn big full" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
+              <div className="quickAddRow"><button className="ghostBtn" onClick={()=>setMlBid(String((Number(mlBid||0)||0)+1000))}>+ 1 000 USD</button></div><button className="primaryBtn big full" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
               <button className="secondaryBtn big full" onClick={()=>commitML(null)}>Nechci být ML</button>
+              {gs?.biz?.mlRankingVisible ? <div className="rankingBox"><div className="secTitle">Pořadí nabídek</div>{(gs?.biz?.mlRanking||[]).map(r=><div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}</div> : null}
             </div>
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="MOVE" ? (
@@ -1224,14 +1134,6 @@ export default function GamePage(){
               </div>
             ) : null}
 
-            {gs?.biz?.auction?.rankingVisible && (gs?.biz?.auction?.ranking||[]).length ? (
-              <div className="rankingBox">
-                <div className="rankingTitle">Pořadí nabídek</div>
-                {(gs.biz.auction.ranking||[]).map(r => (
-                  <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
-                ))}
-              </div>
-            ) : null}
             {!aucEntry?.committed ? (
               <>
                 <div className="formRow stackConfirm">
@@ -1243,9 +1145,7 @@ export default function GamePage(){
                     value={aucBid}
                     onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))}
                   />
-                  <div className="quickAddRow">
-                    <button className="ghostBtn" onClick={()=>setAucBid(String((Number(aucBid||0)||0)+1000))}>+ 1 000 USD</button>
-                  </div>
+                  <div className="quickAddRow"><button className="ghostBtn" onClick={()=>setAucBid(String((Number(aucBid||0)||0)+1000))}>+ 1 000 USD</button></div>
                   <button className="primaryBtn big full" onClick={()=>commitAuction(aucBid===""?null:Number(aucBid), false)}>Potvrdit</button>
                 </div>
 
@@ -1284,17 +1184,15 @@ export default function GamePage(){
                       })}
                     </div>
 
-                    <div className="formRow stackConfirm" style={{marginTop:12}}>
+                    <div className="formRow" style={{marginTop:12}}>
                       <input className="inputBig" inputMode="numeric" placeholder="0" maxLength={8} value={aucFinalBid} onChange={(e)=>setAucFinalBid(e.target.value.replace(/[^\d]/g,""))} />
-                      <div className="quickAddRow">
-                        <button className="ghostBtn" onClick={()=>setAucFinalBid(String((Number(aucFinalBid||0)||0)+1000))}>+ 1 000 USD</button>
-                      </div>
-                      <button className="primaryBtn big full" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
+                      <div className="quickAddRow"><button className="ghostBtn" onClick={()=>setAucFinalBid(String((Number(aucFinalBid||0)||0)+1000))}>+ 1 000 USD</button></div>
+                      <button className="primaryBtn big" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
                     </div>
                     <button className="secondaryBtn big full" onClick={()=>commitFinalAuction(null)} style={{marginTop:10}}>Nechci dražit</button>
                   </div>
                 ) : (
-                  <div className="muted">Obálka odeslána. (Telefon je skrytý – můžeš odkryt ručně.)</div>
+                  <div className="muted">Obálka odeslána. (Telefon je skrytý – můžeš odkryt ručně.)</div>{gs?.biz?.auction?.rankingVisible ? <div className="rankingBox"><div className="secTitle">Pořadí nabídek</div>{(gs?.biz?.auction?.ranking||[]).map(r=><div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}</div> : null}
                 )}
               </>
             )}
@@ -1454,9 +1352,20 @@ export default function GamePage(){
                   </div>
 
                   <div className="auditBlock" style={{marginTop:12}}>
-                    <div className="auditHint">Stav auditu</div>
-                    <div className="muted" style={{marginTop:8}}>
-                      {allCommitted ? "Všichni hráči dokončili audit." : "Čeká se na audit ostatních hráčů."}
+                    <div className="auditHint">Veřejná částka vůči bance</div>
+                    <div className="auditTable" style={{marginTop:8}}>
+                      {activePlayers.map(p=>{
+                        const publicEntry = gs?.settle?.entries?.[p.playerId];
+                        const val = Number(publicEntry?.settlementUsd || 0);
+                        return (
+                          <div key={p.playerId} className="auditRow">
+                            <div className="auditLbl">{p.name}</div>
+                            <div className={"auditVal "+(publicEntry?.committed ? (val>0?"pos":val<0?"neg":"neu") : "neu")}>
+                              {publicEntry?.committed ? `${val>=0?"+":""}${val} USD` : "Čeká se"}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1638,12 +1547,7 @@ export default function GamePage(){
         amountText={(mlAmount==null) ? "NECHCI" : `${mlAmount} USD`}
         onReveal={()=>setMlPrivacy("reveal")}
         onHide={()=>setMlPrivacy("hidden")}
-        extraContent={gs?.biz?.mlRankingVisible ? (
-          <div className="rankingBox">
-            <div className="rankingTitle">Pořadí nabídek</div>
-            {(gs?.biz?.mlRanking||[]).map(r => <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}
-          </div>
-        ) : null}
+        ranking={gs?.biz?.mlRankingVisible ? (gs?.biz?.mlRanking||[]) : []}
       />
       <PrivacyCard
         kind="AUCTION"
@@ -1656,12 +1560,7 @@ export default function GamePage(){
         amountText={(aucShownBid==null) ? "NECHCI" : `${aucShownBid} USD`}
         onReveal={()=>setAucPrivacy("reveal")}
         onHide={()=>setAucPrivacy("hidden")}
-        extraContent={gs?.biz?.auction?.rankingVisible ? (
-          <div className="rankingBox">
-            <div className="rankingTitle">Pořadí nabídek</div>
-            {(gs?.biz?.auction?.ranking||[]).map(r => <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>)}
-          </div>
-        ) : null}
+        ranking={gs?.biz?.auction?.rankingVisible ? (gs?.biz?.auction?.ranking||[]) : []}
       />
       <PrivacyCard
         kind="CRYPTO"
@@ -1914,17 +1813,13 @@ export default function GamePage(){
           onClose={()=>setMlTrendIntroOpen(false)}
           hideClose={true}
         >
-          {countdown.active ? (
-            <div className={"countdownInline "+countdown.tone}>
-              <div><b>Čas běží:</b> {String(countdown.seconds).padStart(2,"0")} s</div>
-              <button className="ghostBtn" onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button>
-            </div>
-          ) : null}
           <NewTrendsMini
             gs={gs}
             onOpenTrend={(t)=>setTrendModal(t)}
             onOpenRegional={(t)=>setRegionalModal(t)}
             onClose={()=>setMlTrendIntroOpen(false)}
+            countdownActive={!!countdownMeta?.active}
+            countdownRemaining={countdownRemaining}
           />
         </SuperTopModal>
       ) : null}
@@ -2267,7 +2162,7 @@ function CryptoInlineRow({ crypto }){
   );
 }
 
-function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
+function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose, countdownActive, countdownRemaining }){
   const y = gs?.year || 1;
   const data = gs?.trends?.byYear?.[String(y)];
   const globals = data?.globals || [];
@@ -2297,6 +2192,7 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
 
   return (
     <div className="newTrendsWrap">
+      {countdownActive ? <div className="countdownBanner" style={{marginBottom:10}}>⏱ {String(Math.floor(countdownRemaining/60)).padStart(2,"0")}:{String(countdownRemaining%60).padStart(2,"0")} <button className="ghostBtn" style={{marginLeft:10}} onClick={onClose}>Přejít na nabídku ML</button></div> : null}
       <button className="primaryBtn big full" onClick={onClose}>Nový rok</button>
 
       <div style={{marginTop:6}}>
