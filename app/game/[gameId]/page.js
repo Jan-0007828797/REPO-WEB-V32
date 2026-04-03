@@ -61,13 +61,13 @@ function GMTopModal({ title, onClose, children }){
 function MonoIcon({ name, size=28, className="" }){
   // Monochrome, bold icons (not emoji) – consistent across the whole app.
   const s = Number(size)||28;
-  const common = { viewBox:"0 0 64 64", width:s, height:s, fill:"none", stroke:"currentColor", strokeWidth:5, strokeLinecap:"round", strokeLinejoin:"round" };
+  const common = { viewBox:"0 0 64 64", width:s, height:s, fill:"none", stroke:"currentColor", strokeWidth:4, strokeLinecap:"round", strokeLinejoin:"round" };
   if(name==="crown"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M10 44l6-22 16 14 16-14 6 22" />
-        <path d="M14 44h36" />
-        <path d="M18 52h28" />
+        <path d="M12 46l5-20 15 12 15-12 5 20" />
+        <path d="M16 46h32" />
+        <path d="M20 54h24" />
       </svg>
     );
   }
@@ -82,33 +82,31 @@ function MonoIcon({ name, size=28, className="" }){
   if(name==="envelope"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <rect x="10" y="18" width="44" height="28" rx="6" />
-        <path d="M12 20l20 16 20-16" />
+        <rect x="10" y="18" width="44" height="28" rx="8" />
+        <path d="M12 22l20 15 20-15" />
       </svg>
     );
   }
   if(name==="scan"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M18 12h10" />
-        <path d="M12 22V12h10" />
-        <path d="M46 12h6v10" />
-        <path d="M12 42v10h10" />
-        <path d="M52 42v10H42" />
-        <path d="M28 22v20" />
-        <path d="M36 22v20" />
-        <path d="M24 28h16" />
-        <path d="M24 36h16" />
+        <path d="M18 24v-8h10" />
+        <path d="M46 24v-8H36" />
+        <path d="M18 40v8h10" />
+        <path d="M46 40v8H36" />
+        <path d="M24 32h16" />
+        <path d="M28 24v16" />
+        <path d="M36 24v16" />
       </svg>
     );
   }
-  if(name==="btc"){
+  if(name==="coins"){
     return (
       <svg {...common} className={className} aria-hidden="true">
-        <path d="M26 12v40" />
-        <path d="M38 12v40" />
-        <path d="M22 18h16a8 8 0 010 16H22" />
-        <path d="M22 34h18a7 7 0 010 14H22" />
+        <ellipse cx="32" cy="18" rx="14" ry="6" />
+        <path d="M18 18v10c0 3 6 6 14 6s14-3 14-6V18" />
+        <path d="M18 28v10c0 3 6 6 14 6s14-3 14-6V28" />
+        <path d="M18 38v8c0 3 6 6 14 6s14-3 14-6v-8" />
       </svg>
     );
   }
@@ -119,6 +117,30 @@ function MonoIcon({ name, size=28, className="" }){
         <path d="M24 22h16" />
         <path d="M24 30h16" />
         <path d="M24 38h12" />
+      </svg>
+    );
+  }
+  if(name==="gavel"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M18 26l12-12" />
+        <path d="M26 34l12-12" />
+        <path d="M30 14l10 10" />
+        <path d="M22 22l10 10" />
+        <path d="M30 34L18 46" />
+        <path d="M14 50h24" />
+      </svg>
+    );
+  }
+  if(name==="shuffle"){
+    return (
+      <svg {...common} className={className} aria-hidden="true">
+        <path d="M12 20h10l8 8 8 8h14" />
+        <path d="M44 20h8v8" />
+        <path d="M52 20l-8 8" />
+        <path d="M12 44h10l8-8 8-8" />
+        <path d="M44 44h8v-8" />
+        <path d="M52 44l-8-8" />
       </svg>
     );
   }
@@ -462,6 +484,31 @@ function PhaseBar({ phase, bizStep }){
   );
 }
 
+function formatCountdown(remainingMs){
+  const totalSeconds = Math.max(0, Math.ceil(Number(remainingMs||0) / 1000));
+  const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const ss = String(totalSeconds % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
+function CountdownBar({ countdown, compact=false }){
+  const duration = Math.max(1, Number(countdown?.durationMs||45000));
+  const remaining = Math.max(0, Number(countdown?.remainingMs||0));
+  const ratio = Math.max(0, Math.min(1, remaining / duration));
+  const danger = remaining <= 10000;
+  const warn = !danger && remaining <= 20000;
+  const cls = danger ? "danger" : warn ? "warn" : "normal";
+  return (
+    <div className={`countdownBar ${compact?"compact":""} ${cls}`}>
+      <div className="countdownTop">
+        <div className="countdownLabel"><MonoIcon name="stopwatch" size={compact?18:20} /> <span>Odpočet</span></div>
+        <div className="countdownTime">{formatCountdown(remaining)}</div>
+      </div>
+      <div className="countdownTrack"><div className="countdownFill" style={{ width: `${ratio*100}%` }} /></div>
+    </div>
+  );
+}
+
 function PrivacyCard({ kind, mode, amountText, onReveal, onHide }){
   const b = badgeFor(kind);
   if(mode==="edit") return null;
@@ -502,6 +549,8 @@ export default function GamePage(){
   // Socket must be initialized before any hooks that reference it (dependency arrays are evaluated during render).
   const s = useMemo(()=> getSocket(), []);
   const [gs, setGs] = useState(null);
+  const [countdownNow, setCountdownNow] = useState(Date.now());
+  const [connectionState, setConnectionState] = useState("connected");
   const [err, setErr] = useState("");
   const [tab, setTab] = useState(null);
   const [gmPanelOpen, setGmPanelOpen] = useState(false);
@@ -528,7 +577,6 @@ export default function GamePage(){
   // Audit (SETTLE) UX state
   const [auditPreview, setAuditPreview] = useState(null); // {settlementUsd, breakdown}
   const [auditLoading, setAuditLoading] = useState(false);
-  const [nowTs, setNowTs] = useState(Date.now());
 
   useEffect(()=>{
     if (!gameId || typeof window === "undefined") return;
@@ -560,27 +608,34 @@ export default function GamePage(){
         if(!res?.ok) setErr(res?.error || "Nelze načíst hru.");
       });
     };
-    watch();
     const onState = (state)=>{
       if(state?.gameId!==gameId) return;
       setGs(state);
+      setConnectionState("connected");
     };
-    const onConnect = ()=> watch();
-    const onVisible = ()=>{ if(document.visibilityState==="visible") watch(); };
+    const onConnect = ()=>{ setConnectionState("connected"); watch(); };
+    const onDisconnect = ()=> setConnectionState("reconnecting");
+    const onReconnect = ()=>{ setConnectionState("connected"); watch(); };
+    const onVisibility = ()=>{
+      if(document.visibilityState === "visible"){
+        try{ if(!s.connected) s.connect(); }catch{}
+        watch();
+      }
+    };
+    watch();
     s.on("game_state", onState);
     s.on("connect", onConnect);
-    document.addEventListener("visibilitychange", onVisible);
+    s.io.on("reconnect", onReconnect);
+    s.on("disconnect", onDisconnect);
+    document.addEventListener("visibilitychange", onVisibility);
     return ()=>{
       s.off("game_state", onState);
       s.off("connect", onConnect);
-      document.removeEventListener("visibilitychange", onVisible);
+      s.off("disconnect", onDisconnect);
+      s.io.off("reconnect", onReconnect);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [gameId, playerId]);
-
-  useEffect(()=>{
-    const id = setInterval(()=>setNowTs(Date.now()), 250);
-    return ()=>clearInterval(id);
-  }, []);
+  }, [gameId, playerId, s]);
 
   const me = gs?.players?.find(p=>p.playerId===playerId) || null;
   const isGM = me?.role==="GM";
@@ -613,17 +668,17 @@ export default function GamePage(){
       }
     }
   }, [gs, playerId]);
-
-
-  const countdownMs = useMemo(()=>{
-    const endsAt = Number(gs?.countdown?.endsAt || 0);
-    if(!gs?.countdown?.active || !endsAt) return 0;
-    return Math.max(0, endsAt - nowTs);
-  }, [gs?.countdown, nowTs]);
-  const countdownSec = Math.ceil(countdownMs / 1000);
-  const countdownActive = !!gs?.countdown?.active && countdownMs>0;
-  const countdownText = `${String(Math.floor(countdownSec/60)).padStart(2,"0")}:${String(countdownSec%60).padStart(2,"0")}`;
-  const countdownTone = countdownSec<=10 ? "critical" : countdownSec<=20 ? "warn" : "normal";
+  const gmBadge = useMemo(()=>{
+    const participants = gs?.players || [];
+    const connected = participants.filter(p=>p.connected).length;
+    const totalParticipants = participants.length;
+    const readinessActive = readiness.total > 0;
+    return {
+      ready: readinessActive ? readiness.ready : connected,
+      total: readinessActive ? readiness.total : totalParticipants,
+      isGreen: readinessActive ? readiness.isGreen : (totalParticipants > 0 && connected === totalParticipants),
+    };
+  }, [gs?.players, readiness]);
 
   // Load preview when entering SETTLE and not yet committed
   useEffect(()=>{
@@ -748,7 +803,7 @@ export default function GamePage(){
   function gmNext(){ s.emit("gm_next", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
   function gmBack(){ s.emit("gm_back", { gameId, playerId }, (res)=>{ if(!res?.ok) setErr(res?.error||""); }); }
 
-  // Readiness signal for GM button (only real players, never GM)
+  // Readiness signal for GM button (GM is NOT counted as a player)
   const readiness = useMemo(()=>{
     const players = (gs?.players || []).filter(p=>p.role!=="GM");
     if(!players.length) return { ready:0, total:0, isGreen:false };
@@ -886,6 +941,19 @@ export default function GamePage(){
   const myInv = gs?.inventory?.[playerId] || { investments:[], miningFarms:[], experts:[] };
   const myReveals = gs?.reveals?.[playerId] || { globalYearsRevealed:[], cryptoYearsRevealed:[] };
 
+  const countdownView = useMemo(()=>{
+    const raw = gs?.countdown;
+    if(!raw?.active || !raw?.endsAt) return null;
+    const remainingMs = Math.max(0, Number(raw.endsAt) - countdownNow);
+    return { ...raw, remainingMs };
+  }, [gs?.countdown, countdownNow]);
+
+  useEffect(()=>{
+    if(!countdownView?.active) return;
+    const id = setInterval(()=> setCountdownNow(Date.now()), 250);
+    return ()=> clearInterval(id);
+  }, [countdownView?.active, countdownView?.endsAt]);
+
   if(err){
     // keep minimal
   }
@@ -901,16 +969,17 @@ export default function GamePage(){
             ) : null}
           </div>
           <div className="topHeaderRight">
-            {/* intentionally empty: frees the top-right corner for GM and other critical controls */}
+            {connectionState!=="connected" ? <div className="connBadge">Obnovuji spojení…</div> : null}
           </div>
         </div>
         <PhaseBar phase={gs?.phase} bizStep={gs?.bizStep} />
+        {countdownView ? <CountdownBar countdown={countdownView} /> : null}
       </div>
 
       {isGM && gs?.status==="IN_PROGRESS" ? (
         <div className="gmFabFixed">
           <button
-            className={"gmFab "+(readiness.isGreen?"gmGreen":"gmRed")}
+            className={"gmFab "+(gmBadge.isGreen?"gmGreen":"gmRed")}
             onClick={()=>{
               if(readiness.isGreen){
                 gmNext();
@@ -920,16 +989,26 @@ export default function GamePage(){
             }}
             aria-label="GM – další fáze"
           >
-            GM <span className="gmCount">{readiness.ready}/{readiness.total}</span>
+            GM <span className="gmCount">{gmBadge.ready}/{gmBadge.total}</span>
           </button>
         </div>
       ) : null}
 
       {err ? <div className="toast" onClick={()=>setErr("")}>{err}</div> : null}
-      {countdownActive ? (
-        <div className={`countdownBar ${countdownTone}`}>
-          <span className="countdownIcon"><MonoIcon name="stopwatch" size={18} /></span>
-          <span>{countdownText}</span>
+      {countdownView ? (
+        <div className="countdownPlayers">
+          {(gs?.players||[]).filter(p=>p.role!=="GM").map((p)=>{
+            const step = gs?.bizStep; const phase = gs?.phase;
+            let ready = false;
+            if(phase==="BIZ" && step==="ML_BID") ready = !!gs?.biz?.mlBids?.[p.playerId]?.committed;
+            else if(phase==="BIZ" && step==="MOVE") ready = !!gs?.biz?.move?.[p.playerId]?.committed;
+            else if(phase==="BIZ" && step==="AUCTION_ENVELOPE"){
+              const e = gs?.biz?.auction?.entries?.[p.playerId];
+              ready = !gs?.biz?.auction?.lobbyistPhaseActive ? !!e?.committed : (!e?.usedLobbyist || !!e?.finalCommitted);
+            }
+            else if(phase==="CRYPTO") ready = !!gs?.crypto?.entries?.[p.playerId]?.committed;
+            return <div key={p.playerId} className={`countdownPlayer ${ready?"ready":"waiting"}`}>{ready?"✓":"⏳"} {p.name}</div>;
+          })}
         </div>
       ) : null}
 
@@ -953,6 +1032,17 @@ export default function GamePage(){
               </div>
             </div>
 
+            {gs?.rankings?.mlVisible && (gs.rankings.ml||[]).length>1 ? (
+              <div className="rankingBox">
+                <div className="rankingTitle">Pořadí nabídek</div>
+                <div className="rankingList">
+                  {(gs.rankings.ml||[]).map(r => (
+                    <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {/* golden rule: keep button styling (classes) identical; only change layout */}
             <div className="formRow stackConfirm">
               <input
@@ -963,18 +1053,12 @@ export default function GamePage(){
                 value={mlBid}
                 onChange={(e)=>setMlBid(e.target.value.replace(/[^\d]/g,""))}
               />
-              <button className="secondaryBtn full" onClick={()=>setMlBid(String((Number(mlBid||0)+1000)))}>+ 1 000 USD</button>
+              <div className="quickAddRow">
+                <button className="secondaryBtn" type="button" onClick={()=>setMlBid(String((Number(mlBid||0)||0)+1000))}>+ 1 000 USD</button>
+              </div>
               <button className="primaryBtn big full" onClick={()=>commitML(mlBid===""?0:Number(mlBid))}>Potvrdit</button>
               <button className="secondaryBtn big full" onClick={()=>commitML(null)}>Nechci být ML</button>
             </div>
-            {gs?.biz?.mlRankingVisible && (gs?.biz?.mlRanking||[]).length>1 ? (
-              <div className="rankingBox">
-                <div className="rankingTitle">Pořadí nabídek</div>
-                {(gs.biz.mlRanking||[]).map(r => (
-                  <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
-                ))}
-              </div>
-            ) : null}
           </div>
         ) : gs.phase==="BIZ" && gs.bizStep==="MOVE" ? (
           <div className="card phaseCard">
@@ -1173,6 +1257,17 @@ export default function GamePage(){
               </div>
             ) : null}
 
+            {gs?.rankings?.auctionVisible && (gs.rankings.auction||[]).length>1 ? (
+              <div className="rankingBox" style={{marginBottom:12}}>
+                <div className="rankingTitle">Pořadí nabídek</div>
+                <div className="rankingList">
+                  {(gs.rankings.auction||[]).map(r => (
+                    <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {!aucEntry?.committed ? (
               <>
                 <div className="formRow stackConfirm">
@@ -1184,20 +1279,13 @@ export default function GamePage(){
                     value={aucBid}
                     onChange={(e)=>setAucBid(e.target.value.replace(/[^\d]/g,""))}
                   />
-                  <button className="secondaryBtn full" onClick={()=>setAucBid(String((Number(aucBid||0)+1000)))}>+ 1 000 USD</button>
+                  <div className="quickAddRow">
+                    <button className="secondaryBtn" type="button" onClick={()=>setAucBid(String((Number(aucBid||0)||0)+1000))}>+ 1 000 USD</button>
+                  </div>
                   <button className="primaryBtn big full" onClick={()=>commitAuction(aucBid===""?null:Number(aucBid), false)}>Potvrdit</button>
                 </div>
 
                 <button className="secondaryBtn big full" onClick={()=>commitAuction(null, false)}>Nechci dražit</button>
-
-                {gs?.biz?.auction?.rankingVisible && (gs?.biz?.auction?.ranking||[]).length>1 ? (
-                  <div className="rankingBox">
-                    <div className="rankingTitle">Pořadí nabídek</div>
-                    {(gs.biz.auction.ranking||[]).map(r => (
-                      <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
-                    ))}
-                  </div>
-                ) : null}
 
                 {(()=>{
                   const hasLobbyist = (myInv?.experts||[]).some(e=>e.functionKey==="LOBBY_LASTCALL");
@@ -1219,23 +1307,23 @@ export default function GamePage(){
                   <div className="cardInner">
                     <div className="muted"><b>Lobbista</b> – vidíš výsledky 1. kola. Nyní zvol finální rozhodnutí.</div>
 
-                    <div className="auditTable" style={{marginTop:12}}>
-                      {(gs.players||[]).map(p=>{
-                        const e = gs.biz.auction.entries?.[p.playerId];
-                        const txt = e?.usedLobbyist ? "Použit Lobbista" : (e?.bidUsd==null ? "Nechci dražit" : `${e.bidUsd} USD`);
-                        return (
-                          <div key={p.playerId} className="auditRow">
-                            <div className="auditLbl">{p.name}</div>
-                            <div className="auditVal neu">{txt}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {gs?.rankings?.auctionVisible && (gs.rankings.auction||[]).length>1 ? (
+                      <div className="rankingBox" style={{marginTop:12}}>
+                        <div className="rankingTitle">Pořadí nabídek</div>
+                        <div className="rankingList">
+                          {(gs.rankings.auction||[]).map(r => (
+                            <div key={r.playerId} className="rankingRow"><span>{r.rank}.</span><span>{r.name}</span></div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
 
-                    <div className="formRow" style={{marginTop:12}}>
+                    <div className="formRow stackConfirm" style={{marginTop:12}}>
                       <input className="inputBig" inputMode="numeric" placeholder="0" maxLength={8} value={aucFinalBid} onChange={(e)=>setAucFinalBid(e.target.value.replace(/[^\d]/g,""))} />
-                      <button className="secondaryBtn" onClick={()=>setAucFinalBid(String((Number(aucFinalBid||0)+1000)))}>+ 1 000 USD</button>
-                      <button className="primaryBtn big" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
+                      <div className="quickAddRow">
+                        <button className="secondaryBtn" type="button" onClick={()=>setAucFinalBid(String((Number(aucFinalBid||0)||0)+1000))}>+ 1 000 USD</button>
+                      </div>
+                      <button className="primaryBtn big full" onClick={()=>commitFinalAuction(aucFinalBid===""?0:Number(aucFinalBid))}>Potvrdit</button>
                     </div>
                     <button className="secondaryBtn big full" onClick={()=>commitFinalAuction(null)} style={{marginTop:10}}>Nechci dražit</button>
                   </div>
@@ -1285,7 +1373,7 @@ export default function GamePage(){
           <div className="card phaseCard">
             <div className="phaseHeader">
               <div className="phaseLeft">
-                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="btc" size={48} /></div>
+                <div className="phaseIcon" aria-hidden="true"><MonoIcon name="coins" size={48} /></div>
                 <div>
                   <div className="phaseTitle">Kryptoburza</div>
                   <div className="phaseSub">Naklikej změny v kusech. Pak potvrď. Ukazovací režim skryje detaily.</div>
@@ -1401,8 +1489,11 @@ export default function GamePage(){
 
                   <div className="auditBlock" style={{marginTop:12}}>
                     <div className="auditHint">Stav auditu</div>
-                    <div className="muted" style={{marginTop:8}}>
-                      {allCommitted ? "Audit dokončen všemi hráči." : "Čeká se na audit ostatních hráčů."}
+                    <div className="auditTable" style={{marginTop:8}}>
+                      <div className="auditRow">
+                        <div className="auditLbl">Ostatní hráči</div>
+                        <div className="auditVal neu">Čeká se na audit ostatních hráčů</div>
+                      </div>
                     </div>
                   </div>
 
@@ -1848,12 +1939,14 @@ export default function GamePage(){
           onClose={()=>setMlTrendIntroOpen(false)}
           hideClose={true}
         >
+          {countdownView ? <CountdownBar countdown={countdownView} compact={true} /> : null}
           <NewTrendsMini
             gs={gs}
             onOpenTrend={(t)=>setTrendModal(t)}
             onOpenRegional={(t)=>setRegionalModal(t)}
             onClose={()=>setMlTrendIntroOpen(false)}
           />
+          {countdownView ? <button className="primaryBtn big full" style={{marginTop:12}} onClick={()=>setMlTrendIntroOpen(false)}>Přejít na nabídku ML</button> : null}
         </SuperTopModal>
       ) : null}
 
@@ -2223,16 +2316,8 @@ function NewTrendsMini({ gs, onOpenTrend, onOpenRegional, onClose }){
     return "reg";
   };
 
-  const countdown = gs?.countdown || {};
-  const active = !!countdown.active && countdown.phaseKey==="ML_BID";
   return (
     <div className="newTrendsWrap">
-      {active ? (
-        <div className="mlIntroCountdown">
-          <div className="countdownChip"><MonoIcon name="stopwatch" size={16} /> <span>{Math.max(0, Math.ceil((Number(countdown.endsAt||0)-Date.now())/1000))} s</span></div>
-          <button className="ghostBtn" onClick={onClose}>Přejít na nabídku ML</button>
-        </div>
-      ) : null}
       <button className="primaryBtn big full" onClick={onClose}>Nový rok</button>
 
       <div style={{marginTop:6}}>
