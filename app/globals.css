@@ -1460,4 +1460,53 @@ button{ font-family:inherit; }
   .walletMainValue{ font-size:22px; }
 }
 
-.countdownBanner{margin-top:10px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.08);font-weight:800;display:inline-flex;align-items:center;gap:10px}.quickAddRow{display:flex;justify-content:flex-start;margin:8px 0}.rankingBox{margin-top:12px;padding:12px;border-radius:14px;background:rgba(255,255,255,.05)}.rankingRow{display:flex;justify-content:space-between;padding:4px 0}
+.countdownBar{
+  position: sticky;
+  top: 10px;
+  z-index: 40;
+  margin: 8px auto 0;
+  width: fit-content;
+  min-width: 110px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(15,23,42,.82);
+  box-shadow: 0 8px 24px rgba(0,0,0,.24);
+}
+.countdownBar.normal{ border-color: rgba(255,255,255,.18); }
+.countdownBar.warning{ border-color: rgba(251,191,36,.45); }
+.countdownBar.critical{ border-color: rgba(244,63,94,.5); }
+.countdownLabel{ font-weight: 900; font-variant-numeric: tabular-nums; }
+.connectionBanner{
+  margin: 8px auto 0;
+  width: fit-content;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(251,191,36,.14);
+  border: 1px solid rgba(251,191,36,.35);
+  color: #fde68a;
+  font-weight: 700;
+}
+.quickAddRow{ display:flex; gap:10px; justify-content:flex-start; }
+.rankingBox{
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.rankingTitle{ font-weight: 900; margin-bottom: 8px; }
+.rankingRow{ display:flex; justify-content:space-between; gap:12px; padding: 4px 0; }
+.countdownInline{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.10);
+}
+.countdownInline.warning{ border-color: rgba(251,191,36,.45); }
+.countdownInline.critical{ border-color: rgba(244,63,94,.45); }
