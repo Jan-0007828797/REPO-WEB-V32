@@ -1340,7 +1340,7 @@ export default function GamePage(){
 
                   <div className="auditBlock" style={{marginTop:12}}><div className="auditHint">Po potvrzení auditu se zobrazí pouze tvoje důvěrné vyúčtování. Stav ostatních hráčů zůstává skrytý.</div></div>
 
-                  {!mySettleCommitted ? (
+                  {!committed ? (
                     <div className="ctaRow">
                       <button className="primaryBtn big full" onClick={commitSettle}>Zahájit audit</button>
                       {usable.length ? (
